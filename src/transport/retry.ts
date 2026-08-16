@@ -24,8 +24,7 @@ function isRetryableDefault(error: Error): boolean {
   return false;
 }
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Executes an async operation with retries according to config.

@@ -3,7 +3,6 @@ import {
   mapError,
   OllamaAbortError,
   OllamaAuthError,
-  OllamaClientError,
   OllamaNetworkError,
   OllamaNotFoundError,
   OllamaRateLimitError,

@@ -41,7 +41,10 @@ export class OllamaClientError extends Error {
 }
 
 export class OllamaNetworkError extends OllamaClientError {
-  constructor(message: string, options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined) {
+  constructor(
+    message: string,
+    options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined,
+  ) {
     super(message, { ...options, code: 'network_error', retryable: true });
   }
 }
@@ -50,7 +53,9 @@ export class OllamaTimeoutError extends OllamaClientError {
   readonly timeoutMs?: number | undefined;
   constructor(
     message: string,
-    options?: (Omit<OllamaClientErrorOptions, 'code' | 'retryable'> & { timeoutMs?: number | undefined }) | undefined,
+    options?:
+      | (Omit<OllamaClientErrorOptions, 'code' | 'retryable'> & { timeoutMs?: number | undefined })
+      | undefined,
   ) {
     super(message, { ...options, code: 'timeout', retryable: true });
     this.timeoutMs = options?.timeoutMs;
@@ -58,13 +63,19 @@ export class OllamaTimeoutError extends OllamaClientError {
 }
 
 export class OllamaAuthError extends OllamaClientError {
-  constructor(message: string, options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined) {
+  constructor(
+    message: string,
+    options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined,
+  ) {
     super(message, { ...options, code: 'auth_error', retryable: false });
   }
 }
 
 export class OllamaNotFoundError extends OllamaClientError {
-  constructor(message: string, options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined) {
+  constructor(
+    message: string,
+    options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined,
+  ) {
     super(message, { ...options, code: 'not_found', retryable: false });
   }
 }
@@ -73,7 +84,11 @@ export class OllamaRateLimitError extends OllamaClientError {
   readonly retryAfterMs?: number | undefined;
   constructor(
     message: string,
-    options?: (Omit<OllamaClientErrorOptions, 'code' | 'retryable'> & { retryAfterMs?: number | undefined }) | undefined,
+    options?:
+      | (Omit<OllamaClientErrorOptions, 'code' | 'retryable'> & {
+          retryAfterMs?: number | undefined;
+        })
+      | undefined,
   ) {
     super(message, { ...options, code: 'rate_limited', retryable: true });
     this.retryAfterMs = options?.retryAfterMs;
@@ -81,13 +96,19 @@ export class OllamaRateLimitError extends OllamaClientError {
 }
 
 export class OllamaServerError extends OllamaClientError {
-  constructor(message: string, options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined) {
+  constructor(
+    message: string,
+    options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined,
+  ) {
     super(message, { ...options, code: 'server_error', retryable: true });
   }
 }
 
 export class OllamaAbortError extends OllamaClientError {
-  constructor(message: string, options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined) {
+  constructor(
+    message: string,
+    options?: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> | undefined,
+  ) {
     super(message, { ...options, code: 'aborted', retryable: false });
   }
 }
@@ -148,7 +169,10 @@ export class OllamaSkillInvalidError extends OllamaClientError {
   readonly path?: string | undefined;
   constructor(
     message: string,
-    options: Omit<OllamaClientErrorOptions, 'code'> & { skillName: string; path?: string | undefined },
+    options: Omit<OllamaClientErrorOptions, 'code'> & {
+      skillName: string;
+      path?: string | undefined;
+    },
   ) {
     super(message, { ...options, code: 'skill_invalid', retryable: false });
     this.skillName = options.skillName;
@@ -195,7 +219,10 @@ function statusToError(
  */
 export function mapError(
   error: unknown,
-  context: { request?: OllamaErrorRequestContext | undefined; response?: OllamaErrorResponseContext | undefined } = {},
+  context: {
+    request?: OllamaErrorRequestContext | undefined;
+    response?: OllamaErrorResponseContext | undefined;
+  } = {},
 ): OllamaClientError {
   if (error instanceof OllamaClientError) {
     return error;

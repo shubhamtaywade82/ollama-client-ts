@@ -47,10 +47,7 @@ export interface LifecycleErrorEvent {
 }
 
 export type RequestLifecycleEvent =
-  | LifecycleStartEvent
-  | LifecycleSuccessEvent
-  | LifecycleRetryEvent
-  | LifecycleErrorEvent;
+  LifecycleStartEvent | LifecycleSuccessEvent | LifecycleRetryEvent | LifecycleErrorEvent;
 
 export interface RequestLifecycleHook {
   (event: RequestLifecycleEvent): void;

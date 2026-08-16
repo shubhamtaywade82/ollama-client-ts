@@ -75,7 +75,12 @@ export {
 } from './errors.js';
 
 // Transport and retry
-export { HttpClient, type HttpClientOptions, type HttpRequestOptions, type FetchLike } from './transport/http.js';
+export {
+  HttpClient,
+  type HttpClientOptions,
+  type HttpRequestOptions,
+  type FetchLike,
+} from './transport/http.js';
 export { calculateBackoff, DEFAULT_BACKOFF, type BackoffOptions } from './transport/backoff.js';
 export { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from './transport/retry.js';
 export { createTimeoutSignal, type TimeoutSignal } from './transport/timeout.js';
@@ -123,11 +128,7 @@ export {
 } from './usage.js';
 
 // Schema and Structured Outputs
-export {
-  zodToJsonSchema,
-  parseStructuredOutput,
-  type SupportedSchema,
-} from './schema/zod.js';
+export { zodToJsonSchema, parseStructuredOutput, type SupportedSchema } from './schema/zod.js';
 
 // Tools
 export {
@@ -185,10 +186,7 @@ export {
   type EndpointHealth,
   type EndpointRegistryOptions,
 } from './providers/endpoint-registry.js';
-export {
-  checkEndpointHealth,
-  type EndpointHealthCheckResult,
-} from './providers/health-check.js';
+export { checkEndpointHealth, type EndpointHealthCheckResult } from './providers/health-check.js';
 export {
   detectModelCapabilities,
   inferRuntimeMode,

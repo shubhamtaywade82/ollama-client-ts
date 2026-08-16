@@ -32,7 +32,8 @@ export class EndpointRegistry {
   private readonly now: () => number;
 
   constructor(endpoints: readonly OllamaEndpoint[], options: EndpointRegistryOptions = {}) {
-    this.endpoints = endpoints.length > 0 ? endpoints : [{ name: 'default', baseUrl: 'http://localhost:11434' }];
+    this.endpoints =
+      endpoints.length > 0 ? endpoints : [{ name: 'default', baseUrl: 'http://localhost:11434' }];
     this.failureThreshold = options.failureThreshold ?? 3;
     this.cooldownMs = options.cooldownMs ?? 30_000;
     this.now = options.now ?? Date.now;
@@ -46,7 +47,8 @@ export class EndpointRegistry {
     for (const ep of this.endpoints) {
       const failures = this.failureCounts.get(ep.name) ?? 0;
       const lastFail = this.lastFailures.get(ep.name) ?? 0;
-      const isCooling = failures >= this.failureThreshold && currentTime - lastFail < this.cooldownMs;
+      const isCooling =
+        failures >= this.failureThreshold && currentTime - lastFail < this.cooldownMs;
 
       if (!isCooling) {
         healthy.push(ep);

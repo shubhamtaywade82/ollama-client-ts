@@ -17,7 +17,10 @@ export const DEFAULT_BACKOFF: BackoffOptions = {
 /**
  * Calculates exponential backoff with full jitter for attempt (0-indexed).
  */
-export function calculateBackoff(attempt: number, options: BackoffOptions = DEFAULT_BACKOFF): number {
+export function calculateBackoff(
+  attempt: number,
+  options: BackoffOptions = DEFAULT_BACKOFF,
+): number {
   const exponential = options.initialDelayMs * Math.pow(options.backoffFactor, attempt);
   const ceiling = Math.min(exponential, options.maxDelayMs);
   // Full jitter: random duration between 0 and ceiling

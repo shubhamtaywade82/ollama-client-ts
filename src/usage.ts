@@ -35,9 +35,7 @@ export function extractUsage(raw: RawUsageSource): TokenUsage {
 
   let tokensPerSecond: number | undefined;
   if (raw.eval_count && raw.eval_duration && raw.eval_duration > 0) {
-    tokensPerSecond = Number(
-      ((raw.eval_count / raw.eval_duration) * NANOS_PER_SECOND).toFixed(2),
-    );
+    tokensPerSecond = Number(((raw.eval_count / raw.eval_duration) * NANOS_PER_SECOND).toFixed(2));
   }
 
   return {

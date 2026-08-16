@@ -12,10 +12,7 @@ export interface TimeoutSignal {
 /**
  * Combines an optional timeout with an optional caller-provided AbortSignal.
  */
-export function createTimeoutSignal(
-  timeoutMs?: number,
-  userSignal?: AbortSignal,
-): TimeoutSignal {
+export function createTimeoutSignal(timeoutMs?: number, userSignal?: AbortSignal): TimeoutSignal {
   if (!timeoutMs && !userSignal) {
     const controller = new AbortController();
     return { signal: controller.signal, cancel: () => undefined };
@@ -26,7 +23,9 @@ export function createTimeoutSignal(
 
   if (timeoutMs && timeoutMs > 0) {
     timerId = setTimeout(() => {
-      controller.abort(new OllamaTimeoutError(`Request timed out after ${timeoutMs}ms`, { timeoutMs }));
+      controller.abort(
+        new OllamaTimeoutError(`Request timed out after ${timeoutMs}ms`, { timeoutMs }),
+      );
     }, timeoutMs);
   }
 

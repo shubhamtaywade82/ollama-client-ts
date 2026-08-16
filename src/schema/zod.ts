@@ -11,12 +11,21 @@ export type SupportedSchema<T = unknown> = z.ZodType<T>;
  * Converts a Zod schema into a JSON Schema object accepted by Ollama's `format` parameter.
  */
 export function zodToJsonSchema<T>(schema: z.ZodType<T>): Record<string, unknown> {
-  if (typeof (z as { toJSONSchema?: (s: z.ZodType<T>) => Record<string, unknown> }).toJSONSchema === 'function') {
-    return (z as unknown as { toJSONSchema: (s: z.ZodType<T>) => Record<string, unknown> }).toJSONSchema(schema);
+  if (
+    typeof (z as { toJSONSchema?: (s: z.ZodType<T>) => Record<string, unknown> }).toJSONSchema ===
+    'function'
+  ) {
+    return (
+      z as unknown as { toJSONSchema: (s: z.ZodType<T>) => Record<string, unknown> }
+    ).toJSONSchema(schema);
   }
 
   try {
-    return (schema as unknown as { jsonSchema?: Record<string, unknown> }).jsonSchema ?? { type: 'object' };
+    return (
+      (schema as unknown as { jsonSchema?: Record<string, unknown> }).jsonSchema ?? {
+        type: 'object',
+      }
+    );
   } catch {
     return { type: 'object' };
   }

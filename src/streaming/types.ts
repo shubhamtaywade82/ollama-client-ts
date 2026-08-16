@@ -2,7 +2,13 @@
  * Streaming event types, listener contracts, and aggregated result shapes.
  */
 
-import type { ChatResponse, GenerateResponse, ProgressResponse, ToolCall, Message } from '../types.js';
+import type {
+  ChatResponse,
+  GenerateResponse,
+  ProgressResponse,
+  ToolCall,
+  Message,
+} from '../types.js';
 import type { OllamaClientError } from '../errors.js';
 import type { TokenUsage } from '../usage.js';
 

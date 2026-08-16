@@ -71,15 +71,14 @@ export class OllamaClient {
   private readonly logger: Logger;
 
   constructor(config: OllamaClientConfig = {}) {
-    const endpoints =
-      config.endpoints ?? [
-        {
-          name: 'default',
-          baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
-          ...(config.apiKey !== undefined ? { apiKey: config.apiKey } : {}),
-          ...(config.headers !== undefined ? { headers: config.headers } : {}),
-        },
-      ];
+    const endpoints = config.endpoints ?? [
+      {
+        name: 'default',
+        baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
+        ...(config.apiKey !== undefined ? { apiKey: config.apiKey } : {}),
+        ...(config.headers !== undefined ? { headers: config.headers } : {}),
+      },
+    ];
     this.registry = new EndpointRegistry(endpoints, config.endpointHealth);
     this.timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
     this.failoverCodes = new Set(config.failoverOn ?? DEFAULT_FAILOVER_CODES);
@@ -103,7 +102,9 @@ export class OllamaClient {
       let lastError: Error | undefined;
 
       for (const endpoint of candidates) {
-        this.logger.debug(`Executing request against endpoint "${endpoint.name}" (${endpoint.baseUrl})`);
+        this.logger.debug(
+          `Executing request against endpoint "${endpoint.name}" (${endpoint.baseUrl})`,
+        );
         const http = new HttpClient({
           baseUrl: endpoint.baseUrl,
           ...(endpoint.apiKey !== undefined ? { apiKey: endpoint.apiKey } : {}),
@@ -112,10 +113,7 @@ export class OllamaClient {
         });
 
         try {
-          const result = await withRetry(
-            () => operation(http, timeout.signal),
-            this.retryConfig,
-          );
+          const result = await withRetry(() => operation(http, timeout.signal), this.retryConfig);
           this.registry.reportSuccess(endpoint.name);
           return result;
         } catch (err) {
@@ -135,7 +133,9 @@ export class OllamaClient {
   }
 
   // --- Chat ---
-  chat(request: ChatRequestOptions & { stream: true }): Promise<OllamaStream<ChatResponse, ChatStreamResult>>;
+  chat(
+    request: ChatRequestOptions & { stream: true },
+  ): Promise<OllamaStream<ChatResponse, ChatStreamResult>>;
   chat(request: ChatRequestOptions & { stream?: false }): Promise<ChatResponse>;
   async chat(
     request: ChatRequestOptions,
@@ -161,7 +161,9 @@ export class OllamaClient {
     );
   }
 
-  chatStream(request: Omit<ChatRequestOptions, 'stream'>): Promise<OllamaStream<ChatResponse, ChatStreamResult>> {
+  chatStream(
+    request: Omit<ChatRequestOptions, 'stream'>,
+  ): Promise<OllamaStream<ChatResponse, ChatStreamResult>> {
     return this.chat({ ...request, stream: true });
   }
 
@@ -180,7 +182,9 @@ export class OllamaClient {
   }
 
   // --- Generate ---
-  generate(request: GenerateRequestOptions & { stream: true }): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>>;
+  generate(
+    request: GenerateRequestOptions & { stream: true },
+  ): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>>;
   generate(request: GenerateRequestOptions & { stream?: false }): Promise<GenerateResponse>;
   async generate(
     request: GenerateRequestOptions,
@@ -206,7 +210,9 @@ export class OllamaClient {
     );
   }
 
-  generateStream(request: Omit<GenerateRequestOptions, 'stream'>): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>> {
+  generateStream(
+    request: Omit<GenerateRequestOptions, 'stream'>,
+  ): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>> {
     return this.generate({ ...request, stream: true });
   }
 
@@ -227,13 +233,15 @@ export class OllamaClient {
   // --- Embeddings ---
   embed(request: EmbedRequestOptions): Promise<EmbedResponse> {
     return this.executeWithFailover(
-      (http, signal) =>
-        http.request<EmbedResponse>({ path: '/api/embed', body: request, signal }),
+      (http, signal) => http.request<EmbedResponse>({ path: '/api/embed', body: request, signal }),
       request,
     );
   }
 
-  async embedText(model: string, input: string | readonly string[]): Promise<readonly (readonly number[])[]> {
+  async embedText(
+    model: string,
+    input: string | readonly string[],
+  ): Promise<readonly (readonly number[])[]> {
     const res = await this.embed({ model, input });
     return res.embeddings;
   }
@@ -257,13 +265,14 @@ export class OllamaClient {
 
   showModel(request: ShowRequestOptions): Promise<ShowResponse> {
     return this.executeWithFailover(
-      (http, signal) =>
-        http.request<ShowResponse>({ path: '/api/show', body: request, signal }),
+      (http, signal) => http.request<ShowResponse>({ path: '/api/show', body: request, signal }),
       request,
     );
   }
 
-  pullModel(request: PullRequestOptions & { stream: true }): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
+  pullModel(
+    request: PullRequestOptions & { stream: true },
+  ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
   pullModel(request: PullRequestOptions & { stream?: false }): Promise<ProgressResponse>;
   async pullModel(
     request: PullRequestOptions,
@@ -289,7 +298,9 @@ export class OllamaClient {
     );
   }
 
-  pushModel(request: PushRequestOptions & { stream: true }): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
+  pushModel(
+    request: PushRequestOptions & { stream: true },
+  ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
   pushModel(request: PushRequestOptions & { stream?: false }): Promise<ProgressResponse>;
   async pushModel(
     request: PushRequestOptions,
@@ -315,7 +326,9 @@ export class OllamaClient {
     );
   }
 
-  createModel(request: CreateRequestOptions & { stream: true }): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
+  createModel(
+    request: CreateRequestOptions & { stream: true },
+  ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
   createModel(request: CreateRequestOptions & { stream?: false }): Promise<ProgressResponse>;
   async createModel(
     request: CreateRequestOptions,
@@ -356,8 +369,7 @@ export class OllamaClient {
 
   copyModel(request: CopyRequestOptions): Promise<StatusResponse> {
     return this.executeWithFailover(
-      (http, signal) =>
-        http.request<StatusResponse>({ path: '/api/copy', body: request, signal }),
+      (http, signal) => http.request<StatusResponse>({ path: '/api/copy', body: request, signal }),
       request,
     );
   }
@@ -402,9 +414,7 @@ export class OllamaClient {
   }
 
   healthCheck(): Promise<EndpointHealthCheckResult[]> {
-    return Promise.all(
-      this.registry.list().map((ep) => checkEndpointHealth(ep, this.fetchImpl)),
-    );
+    return Promise.all(this.registry.list().map((ep) => checkEndpointHealth(ep, this.fetchImpl)));
   }
 
   endpointStatus(): EndpointHealth[] {

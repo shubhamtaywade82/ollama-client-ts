@@ -3,11 +3,7 @@
  */
 
 import { mapError, type OllamaClientError } from '../errors.js';
-import type {
-  AbortableAsyncIterable,
-  OllamaStreamEvent,
-  OllamaStreamEventType,
-} from './types.js';
+import type { AbortableAsyncIterable, OllamaStreamEvent, OllamaStreamEventType } from './types.js';
 
 type ChunkMapper<TChunk, TFinal> = (
   chunk: TChunk,
@@ -18,9 +14,9 @@ type Aggregator<TChunk, TFinal> = (accumulated: TFinal, chunk: TChunk) => TFinal
 
 type Listener<TChunk, TFinal> = (event: OllamaStreamEvent<TChunk, TFinal>) => void;
 
-export class OllamaStream<TChunk, TFinal>
-  implements AsyncIterable<OllamaStreamEvent<TChunk, TFinal>>
-{
+export class OllamaStream<TChunk, TFinal> implements AsyncIterable<
+  OllamaStreamEvent<TChunk, TFinal>
+> {
   private mode: 'unconsumed' | 'iterator' | 'events' = 'unconsumed';
   private readonly listeners = new Map<string, Set<Listener<TChunk, TFinal>>>();
   private readonly finalResultPromise: Promise<TFinal>;
