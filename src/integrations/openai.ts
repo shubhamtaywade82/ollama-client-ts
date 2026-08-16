@@ -71,6 +71,13 @@ export class OpenAICompatClient {
     });
   }
 
+  async chatCompletions(
+    request: OpenAIChatCompletionRequest,
+    signal?: AbortSignal,
+  ): Promise<OpenAIChatCompletionResponse> {
+    return this.createChatCompletion(request, signal);
+  }
+
   async listModels(signal?: AbortSignal): Promise<OpenAIListModelsResponse> {
     return this.http.request<OpenAIListModelsResponse>({
       path: '/v1/models',

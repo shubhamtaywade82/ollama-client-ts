@@ -1,0 +1,56 @@
+{
+  "name": "client_chat_schema",
+  "recordedAt": "2026-08-16T17:27:05.690Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Generate a profile for Alice, age 30, role developer."
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "format": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              },
+              "role": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "age",
+              "role"
+            ],
+            "additionalProperties": false
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:27:05 GMT",
+          "transfer-encoding": "chunked"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:27:05.685213401Z\",\"message\":{\"role\":\"assistant\",\"content\":\"{\\n  \\\"name\\\": \\\"Alice\\\",\\n  \\\"age\\\": 30,\\n  \\\"role\\\": \\\"Software Developer / Full-Stack Engineer\\\"\\n}\",\"thinking\":\"Here's a thinking process that leads to the suggested profiles:\\n\\n1.  **Analyze the Request:**\\n    *   **Subject:** Alice (a female name).\\n    *   **Age:** 30 years old.\\n    *   **Role/Job Title:** Developer.\\n    *   **Goal:** Generate a profile for her.\\n\\n2.  **Determine the Context \\u0026 Tone:**\\n    *   Since no specific context was given (e.g., is this LinkedIn, a resume summary, an interview bio, or a fictional character?), I should provide options that cover different use cases.\\n    *   The tone should be professional yet engaging. It needs to sound authentic but customizable.\\n\\n3.  **Identify Key Information Needed for a Developer Profile:**\\n    *   Name \\u0026 Age (Given).\\n    *   Location/Region (Optional, adds realism).\\n    *   Tech Stack/Languages/Frameworks (Crucial for developers).\\n    *   Experience Level (Junior to Senior?). Let's aim for \\\"Mid-Level\\\" or \\\"Senior\\\" as 30 is a common pivot point.\\n    *   Key Skills/Capabilities.\\n    *   Personal Interests/Hobbies (Humanizes the profile).\\n    *   Contact Info/Availability (Optional but good practice).\\n\\n4.  **Drafting Options:**\\n    *   *Option 1: Professional Resume Summary.* Focus on achievements and impact. Good for job applications or LinkedIn \\\"About\\\" section.\\n    *   *Option 2: Personal Bio/Blog Post.* More narrative, storytelling style. Good for social media or networking.\\n    *   *Option 3: Fictional Character Profile (for a story).* If the user is writing fiction about Alice.\\n\\n5.  **Developing Option 1 (Professional Resume Summary):**\\n    *   Headline: Senior Full-Stack Developer / Software Engineer.\\n    *   Experience: Mention years of experience, specific technologies (Python, React, AWS), and key projects.\\n    *   Focus on problem-solving and delivery.\\n\\n6.  **Developing Option 2 (LinkedIn/Professional Bio):**\\n    *   Shorter version for social media or networking sites.\\n    *   Highlight passion for tech culture.\\n    *   Mention soft skills like communication, teamwork.\\n\\n7.  **Developing Option 3 (Creative/Fictional Character Profile - \\\"Alice\\\"):**\\n    *   If the user wants a character profile for writing purposes: Add personality traits, hobbies, and backstory elements to make her feel real.\\n\\n8.  **Refining the Content:**\\n    *   Ensure age is consistent with experience levels (30 usually implies mid-career).\\n    *   Make sure tech stack sounds current but not overly specific so it's adaptable.\\n    *   Add a disclaimer that this can be customized based on actual skills/interests.\\n\\n9.  **Review against Constraints:**\\n    *   Did I include the name? Yes (Alice).\\n    *   Is she age 30? Yes.\\n    *   Is her role developer? Yes.\\n\\n10. **Final Polish:** Organize with clear headings so the user can choose what fits their needs best. Add a section on \\\"Customization Tips\\\" to add value.\\n\\n**(Self-Correction during drafting):** I initially thought about making it very specific (e.g., Python only). But that limits her potential. Better to use brackets like `[Tech Stack]` or leave placeholders so the user can fill in their actual details while keeping a professional structure. Let's create three distinct versions: Professional, Creative/Story-based, and LinkedIn-style.\\n\\n11. **Final Output Generation:** (This matches the provided good response).\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":15983652772,\"load_duration\":766162466,\"prompt_eval_count\":810,\"prompt_eval_duration\":384160000,\"eval_count\":35,\"eval_duration\":618483000}"
+      }
+    }
+  ]
+}

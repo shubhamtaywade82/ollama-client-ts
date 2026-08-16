@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["18", "20", "22"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - run: npm run typecheck
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - run: npm run build
+
+  package:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+
+      - name: Check published type resolution
+        run: npx --yes @arethetypeswrong/cli@latest --pack .
+
+      - name: Verify consumer tarball installation and module resolution
+        run: |
+          npm pack --pack-destination /tmp
+          mkdir -p /tmp/consumer && cd /tmp/consumer
+          echo '{"name":"consumer","version":"1.0.0"}' > package.json
+          npm install /tmp/*.tgz
+          node -e "const { OllamaClient } = require('@shubhamtaywade82/ollama-client-ts'); if (typeof OllamaClient !== 'function') throw new Error('CJS entry broken');"
+          node --input-type=module -e "import { OllamaClient } from '@shubhamtaywade82/ollama-client-ts'; if (typeof OllamaClient !== 'function') throw new Error('ESM entry broken');"

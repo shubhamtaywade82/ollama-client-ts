@@ -7,6 +7,23 @@ import { OllamaToolValidationError } from '../errors.js';
 
 export type SupportedSchema<T = unknown> = z.ZodType<T>;
 
+function extractJsonSubstring(text: string): string {
+  const trimmed = text.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return trimmed;
+  }
+  const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+  return trimmed;
+}
+
 /**
  * Converts a Zod schema into a JSON Schema object accepted by Ollama's `format` parameter.
  */
@@ -40,8 +57,9 @@ export function parseStructuredOutput<T>(
   toolName = 'structured_output',
 ): T {
   let parsed: unknown;
+  const jsonStr = extractJsonSubstring(rawJson);
   try {
-    parsed = JSON.parse(rawJson);
+    parsed = JSON.parse(jsonStr);
   } catch (err) {
     throw new OllamaToolValidationError(`Failed to parse structured output as JSON: ${rawJson}`, {
       toolName,

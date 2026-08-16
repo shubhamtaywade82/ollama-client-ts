@@ -1,0 +1,36 @@
+{
+  "name": "functional_blob_lifecycle",
+  "recordedAt": "2026-08-16T17:27:35.899Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/blobs/sha256%3A8b62707a40afaca2eada46ba3c45ae21027782108d5a99d23e3b694ecf7a4a07",
+        "method": "POST"
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "0",
+          "date": "Sun, 16 Aug 2026 17:27:35 GMT"
+        },
+        "bodyText": ""
+      }
+    },
+    {
+      "request": {
+        "url": "http://localhost:11434/api/blobs/sha256%3A8b62707a40afaca2eada46ba3c45ae21027782108d5a99d23e3b694ecf7a4a07",
+        "method": "HEAD"
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "connection": "close",
+          "date": "Sun, 16 Aug 2026 17:27:35 GMT"
+        },
+        "bodyText": ""
+      }
+    }
+  ]
+}

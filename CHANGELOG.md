@@ -1,0 +1,40 @@
+# Changelog
+
+All notable changes to `@shubhamtaywade82/ollama-client-ts` will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.1.0] - 2026-08-16
+
+### Added
+- **Core Ollama REST API Client:**
+  - Full support for `chat`, `generate`, `embed`, `embeddings`, `ps`, and `version`.
+  - Zero-runtime-dependency HTTP transport with native `fetch`, streaming NDJSON parsing, and binary body blob uploads.
+  - Multi-endpoint high availability registry with circuit breaker failover, priority routing, and health checks.
+  - Configurable exponential backoff with full jitter, retryable error predicates, and timeout signal propagation.
+- **Model Lifecycle & Blob Management:**
+  - `createModel`, `pullModel`, `pushModel`, `copyModel`, `deleteModel`, `listModels`, `showModel`.
+  - Dedicated blob management endpoints: `createBlob` (`POST /api/blobs/:digest`) and `checkBlob` (`HEAD /api/blobs/:digest`).
+- **Structured Outputs & Schema Validation:**
+  - Seamless Zod schema conversion to JSON Schema.
+  - Structured output parsing with resilient markdown code fence JSON extraction and strict validation errors (`OllamaToolValidationError`).
+- **Reasoning & Thinking Tokens:**
+  - Native parsing of reasoning traces (`<think>` tags and `message.thinking`) with dual stream events (`thinking` vs `token`).
+- **Agentic Workflow & Tool Calling:**
+  - Autonomous multi-turn agent execution loop (`Agent`).
+  - Tool definition helper (`defineTool`) with Zod parameter schemas.
+  - Tool registry with duplicate detection and execution error recovery.
+  - Model Context Protocol (MCP) server integration (`createMcpToolSet`, `registerMcpTools`).
+- **Protocol Compatibility Bridges:**
+  - OpenAI compatibility bridge (`/v1/chat/completions`, `/v1/models`).
+  - Anthropic compatibility bridge (`/v1/messages`).
+- **Web Standard Stream Adapters:**
+  - `toTextStream`, `toDataStream`, and `toResponse` for direct integration with Next.js, Vercel AI SDK, and Web standard streams.
+- **Skills System:**
+  - Frontmatter parser for `SKILL.md` documents.
+  - Skill composition and prompt injection into system messages (`applySkill`).
+- **Testing & Quality Assurance:**
+  - 4-tier test architecture: Unit, Integration, Functional, and Behavioral testing (50 tests).
+  - VCR record and replay harness with real cassettes generated against `qwen3.5:2b` and `nomic-embed-text:latest`.
+  - Multi-node CI/CD workflow (Node 18, 20, 22) and automated npm release with provenance.

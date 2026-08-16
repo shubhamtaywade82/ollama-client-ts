@@ -1,13 +1,15 @@
 {
-  "name": "ollama-client-ts",
+  "name": "@shubhamtaywade82/ollama-client-ts",
   "version": "0.1.0",
-  "description": "A production-grade TypeScript SDK for Ollama. Native fetch, zero runtime dependencies, retries, timeouts, middleware, structured streaming, tool-calling, MCP, skills, and Zod-powered structured outputs.",
+  "description": "Production-grade TypeScript SDK for Ollama with native fetch, high availability failover, multi-turn tool calling, structured outputs, reasoning stream tokens, OpenAI/Anthropic bridges, MCP, and Web Stream adapters.",
   "keywords": [
     "ollama",
+    "ollama-client",
+    "ollama-sdk",
     "llm",
-    "sdk",
-    "typescript",
     "ai",
+    "typescript",
+    "nodejs",
     "chat",
     "streaming",
     "tool-calling",
@@ -16,9 +18,21 @@
     "mcp",
     "skills",
     "zod",
-    "structured-outputs"
+    "structured-outputs",
+    "embeddings",
+    "qwen",
+    "llama"
   ],
   "license": "MIT",
+  "author": "Shubham Taywade <shubhamtaywade82@gmail.com>",
+  "homepage": "https://github.com/shubhamtaywade82/ollama-client-ts#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shubhamtaywade82/ollama-client-ts.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shubhamtaywade82/ollama-client-ts/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.cjs",
@@ -47,6 +61,13 @@
     },
     "./package.json": "./package.json"
   },
+  "typesVersions": {
+    "*": {
+      "skills": [
+        "dist/skills.d.ts"
+      ]
+    }
+  },
   "files": [
     "dist",
     "README.md",
@@ -54,13 +75,17 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=20.12.0"
+    "node": ">=18.0.0"
   },
-  "packageManager": "npm@10.9.7",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "prepare": "tsup",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -69,17 +94,16 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "check:types": "npx --yes @arethetypeswrong/cli@latest --pack .",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
     "example": "tsx",
-    "changeset": "changeset",
-    "release": "npm run build && changeset publish",
-    "prepublishOnly": "npm run verify"
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run lint && npm test && npm run build"
   },
   "dependencies": {
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.31.0",
+    "@arethetypeswrong/cli": "^0.17.4",
     "@eslint/js": "^9.39.4",
     "@types/node": "^22.20.0",
     "@vitest/coverage-v8": "^4.1.9",
@@ -93,17 +117,5 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.62.1",
     "vitest": "^4.1.9"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shubhamtaywade82/ollama-client-ts.git"
-  },
-  "homepage": "https://github.com/shubhamtaywade82/ollama-client-ts#readme",
-  "bugs": {
-    "url": "https://github.com/shubhamtaywade82/ollama-client-ts/issues"
-  },
-  "author": "shubhamtaywade82"
+  }
 }

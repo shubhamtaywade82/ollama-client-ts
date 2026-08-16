@@ -1,0 +1,35 @@
+{
+  "name": "client_chat_text",
+  "recordedAt": "2026-08-16T17:26:43.295Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Output exactly the word \"Antigravity\"."
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "1682",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:26:43 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:26:43.284288109Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Antigravity\",\"thinking\":\"Thinking Process:\\n\\n1.  **Analyze the Request:** The user is asking me to output exactly the word \\\"Antigravity\\\". There are no constraints on formatting, punctuation (other than what's in the word), or additional text, other than ensuring I don't add anything extra like introductions or explanations unless they are part of the specific string requested.\\n\\n2.  **Identify the Target String:** The target is the exact sequence of characters: \\\"Antigravity\\\".\\n    *   Case-sensitive? Yes (\\\"A\\\" not \\\"a\\\").\\n    *   Punctuation? No punctuation attached to it in the prompt's instruction, but I should output just that word or ensure no extra spaces/newlines break the flow if interpreted strictly. Usually, exact string matching implies just the words themselves.\\n\\n3.  **Check Constraints:** The user said \\\"Output exactly the word 'Antigravity'\\\". This means:\\n    *   Start with A.\\n    *   Continue with n...t...i...g...r...a...v...y.\\n    *   No extra text like \\\"Here is the answer:\\\" or quotes around it unless they are part of the output (which usually isn't implied by \\\"output exactly\\\").\\n\\n4.  **Formulate Output:** The string to return is `Antigravity`.\\n\\n5.  **Final Verification:** Does this match the instruction? Yes. Is there any hidden constraint I missed? No, just a simple repetition task.\\n\\n6.  **Construct Response:** Antigravity\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":6728184651,\"load_duration\":700134277,\"prompt_eval_count\":19,\"prompt_eval_duration\":354315000,\"eval_count\":323,\"eval_duration\":5555678000}"
+      }
+    }
+  ]
+}

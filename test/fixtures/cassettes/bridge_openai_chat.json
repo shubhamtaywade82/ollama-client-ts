@@ -1,0 +1,32 @@
+{
+  "name": "bridge_openai_chat",
+  "recordedAt": "2026-08-16T17:26:45.547Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/v1/chat/completions",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Say \"42\" only."
+            }
+          ],
+          "temperature": 0
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "727",
+          "content-type": "application/json",
+          "date": "Sun, 16 Aug 2026 17:26:45 GMT"
+        },
+        "bodyText": "{\"id\":\"chatcmpl-170\",\"object\":\"chat.completion\",\"created\":1786901205,\"model\":\"qwen3.5:2b\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"42\",\"reasoning\":\"Thinking Process:\\n\\n1.  **Analyze the Request:** The user wants me to say \\\"42\\\". There are no other constraints or hidden instructions (like a riddle, code challenge, etc.). It's a direct command.\\n\\n2.  **Verify Constraints:** The instruction is explicit (\\\"Say '42' only\\\"). I should not add any extra text, explanations, greetings, or conversational filler. Just the number itself.\\n\\n3.  **Formulate Output:** \\\"42\\\".\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":17,\"completion_tokens\":109,\"total_tokens\":126}}\n"
+      }
+    }
+  ]
+}

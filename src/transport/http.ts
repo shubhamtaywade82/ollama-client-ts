@@ -101,7 +101,14 @@ export class HttpClient {
         return undefined as T;
       }
 
-      return (await response.json()) as T;
+      if (typeof response.text === 'function') {
+        const text = await response.text();
+        return (text ? JSON.parse(text) : undefined) as T;
+      }
+      if (typeof response.json === 'function') {
+        return (await response.json()) as T;
+      }
+      return undefined as T;
     } catch (err) {
       throw mapError(err, { request: { method, url } });
     }

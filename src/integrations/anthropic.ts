@@ -54,4 +54,11 @@ export class AnthropicCompatClient {
       signal,
     });
   }
+
+  async messages(
+    request: AnthropicMessagesRequest,
+    signal?: AbortSignal,
+  ): Promise<AnthropicMessagesResponse> {
+    return this.createMessage(request, signal);
+  }
 }

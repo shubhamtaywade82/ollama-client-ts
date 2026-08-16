@@ -1,0 +1,22 @@
+{
+  "name": "bridge_openai_models",
+  "recordedAt": "2026-08-16T17:26:36.654Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/v1/models",
+        "method": "GET"
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "777",
+          "content-type": "application/json",
+          "date": "Sun, 16 Aug 2026 17:26:36 GMT"
+        },
+        "bodyText": "{\"object\":\"list\",\"data\":[{\"id\":\"nomic-embed-text:latest\",\"object\":\"model\",\"created\":1786603623,\"owned_by\":\"library\"},{\"id\":\"mxbai-embed-large:latest\",\"object\":\"model\",\"created\":1786533015,\"owned_by\":\"library\"},{\"id\":\"qwen3.5:4b\",\"object\":\"model\",\"created\":1786521200,\"owned_by\":\"library\"},{\"id\":\"llama3.2:3b\",\"object\":\"model\",\"created\":1785586278,\"owned_by\":\"library\"},{\"id\":\"qwen3.5:2b\",\"object\":\"model\",\"created\":1785586277,\"owned_by\":\"library\"},{\"id\":\"minimax-m3:cloud\",\"object\":\"model\",\"created\":1785457520,\"owned_by\":\"library\"},{\"id\":\"qwen3.5:0.8b\",\"object\":\"model\",\"created\":1785262037,\"owned_by\":\"library\"},{\"id\":\"qwen2.5:0.5b\",\"object\":\"model\",\"created\":1785259808,\"owned_by\":\"library\"},{\"id\":\"llama3.2:1b\",\"object\":\"model\",\"created\":1784796600,\"owned_by\":\"library\"}]}\n"
+      }
+    }
+  ]
+}

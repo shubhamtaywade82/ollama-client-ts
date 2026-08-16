@@ -1,90 +1,62 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { OllamaClient } from '../src/client.js';
+import { useVcr } from './vcr.js';
 
-describe('OllamaClient', () => {
-  it('executes chat and parses response', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        model: 'llama3.2',
-        created_at: '2026-08-16T00:00:00Z',
-        message: { role: 'assistant', content: 'Antigravity is great' },
-        done: true,
-      }),
+describe('Client Core API with VCR', () => {
+  const MODEL_NAME = 'qwen3.5:2b';
+  const EMBED_MODEL = 'nomic-embed-text:latest';
+
+  it('chatText sends prompt and returns assistant content directly', async () => {
+    await useVcr('client_chat_text', async (client) => {
+      const text = await client.chatText({
+        model: MODEL_NAME,
+        messages: [{ role: 'user', content: 'Output exactly the word "Antigravity".' }],
+        options: { temperature: 0 },
+      });
+
+      expect(text.toLowerCase()).toContain('antigravity');
     });
+  }, 120_000);
 
-    const client = new OllamaClient({ fetch: mockFetch as never });
-    const response = await client.chat({
-      model: 'llama3.2',
-      messages: [{ role: 'user', content: 'Hi' }],
-      stream: false,
+  it('generateText sends raw prompt and returns text response', async () => {
+    await useVcr('client_generate_text', async (client) => {
+      const text = await client.generateText({
+        model: MODEL_NAME,
+        prompt: 'Say "hello world" only.',
+        options: { temperature: 0 },
+      });
+
+      expect(text.toLowerCase()).toContain('hello');
     });
-
-    expect(response.message.content).toBe('Antigravity is great');
-    expect(mockFetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('chatText returns message content directly', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        model: 'llama3.2',
-        created_at: '2026-08-16T00:00:00Z',
-        message: { role: 'assistant', content: 'Short answer' },
-        done: true,
-      }),
-    });
-
-    const client = new OllamaClient({ fetch: mockFetch as never });
-    const text = await client.chatText({
-      model: 'llama3.2',
-      messages: [{ role: 'user', content: 'Question' }],
-    });
-
-    expect(text).toBe('Short answer');
-  });
+  }, 120_000);
 
   it('chatWithSchema parses and validates structured output', async () => {
-    const userSchema = z.object({
-      name: z.string(),
-      age: z.number(),
+    await useVcr('client_chat_schema', async (client) => {
+      const UserSchema = z.object({
+        name: z.string(),
+        age: z.number(),
+        role: z.string(),
+      });
+
+      const user = await client.chatWithSchema(
+        {
+          model: MODEL_NAME,
+          messages: [{ role: 'user', content: 'Generate a profile for Alice, age 30, role developer.' }],
+          options: { temperature: 0 },
+        },
+        UserSchema,
+      );
+
+      expect(user.name).toBe('Alice');
+      expect(user.age).toBe(30);
     });
+  }, 120_000);
 
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        model: 'llama3.2',
-        created_at: '2026-08-16T00:00:00Z',
-        message: { role: 'assistant', content: JSON.stringify({ name: 'Alice', age: 30 }) },
-        done: true,
-      }),
+  it('embedText returns 2D embedding vector array directly', async () => {
+    await useVcr('client_embed_text', async (client) => {
+      const embeddings = await client.embedText(EMBED_MODEL, 'Hello world vector test');
+      expect(embeddings.length).toBe(1);
+      expect(embeddings[0]?.length).toBe(768);
     });
-
-    const client = new OllamaClient({ fetch: mockFetch as never });
-    const result = await client.chatWithSchema(
-      {
-        model: 'llama3.2',
-        messages: [{ role: 'user', content: 'Describe Alice' }],
-      },
-      userSchema,
-    );
-
-    expect(result).toEqual({ name: 'Alice', age: 30 });
-  });
-
-  it('embedText returns embeddings array directly', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        model: 'nomic-embed-text',
-        embeddings: [[0.1, 0.2, 0.3]],
-      }),
-    });
-
-    const client = new OllamaClient({ fetch: mockFetch as never });
-    const embeddings = await client.embedText('nomic-embed-text', 'hello');
-
-    expect(embeddings).toEqual([[0.1, 0.2, 0.3]]);
-  });
+  }, 120_000);
 });

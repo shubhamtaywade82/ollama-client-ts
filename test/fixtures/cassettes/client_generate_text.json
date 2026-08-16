@@ -1,0 +1,30 @@
+{
+  "name": "client_generate_text",
+  "recordedAt": "2026-08-16T17:26:49.689Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/generate",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "prompt": "Say \"hello world\" only.",
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:26:49 GMT",
+          "transfer-encoding": "chunked"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:26:49.660779689Z\",\"response\":\"hello world\",\"thinking\":\"Thinking Process:\\n\\n1.  **Analyze the Request:** The user wants me to say \\\"hello world\\\".\\n2.  **Check Constraints/Policy:** There are no specific constraints or policy violations in this request (e.g., it's not asking for sensitive information, hate speech, etc.). It's a simple text generation task.\\n3.  **Formulate Output:** The instruction is explicit: say \\\"hello world\\\". I should output exactly that phrase without additional commentary unless necessary for clarity (but the prompt says \\\"only\\\", so brevity is key). However, standard AI behavior usually includes some polite framing or just direct execution. Given the strictness of \\\"Say 'hello world' only\\\", I will provide just the text to comply precisely with the instruction while remaining helpful.\\n4.  **Final Decision:** Output exactly \\\"hello world\\\".\\n\\nWait, looking at safety guidelines: Is there any hidden meaning? No. It's a standard greeting request. Just output it.\\n\\nPlan: Output \\\"hello world\\\" only.cw\",\"done\":true,\"done_reason\":\"stop\",\"context\":[248045,846,198,44240,328,14556,1814,1,1132,13,248046,198,248045,74455,198,248068,198,90700,8340,25,271,16,13,220,2972,2014,53983,279,5952,64700,561,1156,6587,728,310,1910,328,14556,1814,3158,198,17,13,220,2972,3840,84457,14,13429,64700,2532,513,874,3050,16484,466,4687,25709,303,411,1622,318,68,1257,2487,424,579,524,9859,364,15739,1928,11,11865,8540,11,4831,34163,1049,579,264,4145,1414,9191,3274,13,198,18,13,220,2972,1774,6134,8984,64700,561,7359,369,11135,25,1910,328,14556,1814,3158,353,1220,2468,6681,421,16629,1973,4945,29611,7014,5689,364,30246,318,7834,279,9640,2640,328,3138,487,748,193288,477,369,1328,553,4213,11,5129,14791,7465,5802,5469,1010,46193,56004,466,1066,2050,10993,13,15767,279,7077,2022,314,328,44240,359,14556,1814,6,1132,487,353,668,3300,1066,279,1414,310,24224,22898,440,279,7359,1345,9376,10631,13,198,19,13,220,2972,18770,39087,64700,8984,6681,328,14556,1814,3158,271,13784,11,3221,506,6925,16981,25,2091,1017,866,7920,7063,30,2233,13,1049,579,264,5129,40719,1622,13,4450,2468,424,13,271,19860,25,8984,328,14556,1814,1,1132,508,86,198,248069,271,14556,1814],\"total_duration\":6338281740,\"load_duration\":947236507,\"prompt_eval_count\":17,\"prompt_eval_duration\":68448000,\"eval_count\":217,\"eval_duration\":3994315000}"
+      }
+    }
+  ]
+}

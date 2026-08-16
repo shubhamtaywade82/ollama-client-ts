@@ -22,11 +22,7 @@ import {
 import { parseStructuredOutput, zodToJsonSchema } from './schema/zod.js';
 import { normalizeChatStream, normalizeGenerateStream } from './streaming/normalize.js';
 import { OllamaStream } from './streaming/stream.js';
-import type {
-  ChatStreamResult,
-  GenerateStreamResult,
-  ProgressStreamResult,
-} from './streaming/types.js';
+import type { ChatStreamResult, GenerateStreamResult } from './streaming/types.js';
 import { HttpClient, type BinaryBody, type FetchLike } from './transport/http.js';
 import { DEFAULT_RETRY_CONFIG, withRetry, type RetryConfig } from './transport/retry.js';
 import { createTimeoutSignal } from './transport/timeout.js';
@@ -45,15 +41,9 @@ import type {
   EmbeddingsResponse,
   GenerateRequestOptions,
   GenerateResponse,
-  ModelResponse,
-  ProgressResponse,
-  PsResponse,
   PullRequestOptions,
   PushRequestOptions,
   ShowRequestOptions,
-  ShowResponse,
-  StatusResponse,
-  VersionResponse,
   WebFetchRequestOptions,
   WebFetchResponse,
   WebSearchRequestOptions,
@@ -254,57 +244,17 @@ export class OllamaClient {
   }
 
   // --- Model Operations (Delegated to ModelsClient) ---
-  listModels(): Promise<ModelResponse[]> {
-    return this.models.list();
-  }
-  showModel(req: ShowRequestOptions): Promise<ShowResponse> {
-    return this.models.show(req);
-  }
-  pullModel(
-    r: PullRequestOptions & { stream: true },
-  ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
-  pullModel(r: PullRequestOptions & { stream?: false | undefined }): Promise<ProgressResponse>;
-  pullModel(
-    r: PullRequestOptions,
-  ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    return this.models.pull(r);
-  }
-  pushModel(
-    r: PushRequestOptions & { stream: true },
-  ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
-  pushModel(r: PushRequestOptions & { stream?: false | undefined }): Promise<ProgressResponse>;
-  pushModel(
-    r: PushRequestOptions,
-  ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    return this.models.push(r);
-  }
-  createModel(
-    r: CreateRequestOptions & { stream: true },
-  ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
-  createModel(r: CreateRequestOptions & { stream?: false | undefined }): Promise<ProgressResponse>;
-  createModel(
-    r: CreateRequestOptions,
-  ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    return this.models.create(r);
-  }
-  deleteModel(req: DeleteRequestOptions): Promise<StatusResponse> {
-    return this.models.delete(req);
-  }
-  copyModel(req: CopyRequestOptions): Promise<StatusResponse> {
-    return this.models.copy(req);
-  }
-  ps(): Promise<PsResponse> {
-    return this.models.ps();
-  }
-  version(): Promise<VersionResponse> {
-    return this.models.version();
-  }
-  createBlob(digest: string, data: BinaryBody): Promise<void> {
-    return this.models.createBlob(digest, data);
-  }
-  checkBlob(digest: string): Promise<boolean> {
-    return this.models.checkBlob(digest);
-  }
+  readonly listModels = () => this.models.list();
+  readonly showModel = (req: ShowRequestOptions) => this.models.show(req);
+  readonly pullModel = (r: PullRequestOptions) => this.models.pull(r);
+  readonly pushModel = (r: PushRequestOptions) => this.models.push(r);
+  readonly createModel = (r: CreateRequestOptions) => this.models.create(r);
+  readonly deleteModel = (req: DeleteRequestOptions) => this.models.delete(req);
+  readonly copyModel = (req: CopyRequestOptions) => this.models.copy(req);
+  readonly ps = () => this.models.ps();
+  readonly version = () => this.models.version();
+  readonly createBlob = (digest: string, data: BinaryBody) => this.models.createBlob(digest, data);
+  readonly checkBlob = (digest: string) => this.models.checkBlob(digest);
 
   // --- Web Endpoints ---
   webSearch(req: WebSearchRequestOptions): Promise<WebSearchResponse> {
