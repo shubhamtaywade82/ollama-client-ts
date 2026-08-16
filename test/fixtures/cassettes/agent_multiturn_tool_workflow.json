@@ -1,0 +1,131 @@
+{
+  "name": "agent_multiturn_tool_workflow",
+  "recordedAt": "2026-08-16T17:14:29.255Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a banking assistant. Use available tools to check balances."
+            },
+            {
+              "role": "user",
+              "content": "What is the balance of account acc_400? Use get_balance tool."
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_balance",
+                "description": "Get user bank account balance by ID",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "description": "The account identifier"
+                    }
+                  },
+                  "required": ["accountId"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "670",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:14:23 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:14:23.890539591Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"thinking\":\"The user wants me to check the balance for account \\\"acc_400\\\" using the get_balance tool. I have all the required information - they've provided the accountId as \\\"acc_400\\\".\\n\\nI need to call the get_balance function with this parameter.\",\"tool_calls\":[{\"id\":\"call_15tv98jf\",\"function\":{\"index\":0,\"name\":\"get_balance\",\"arguments\":{\"accountId\":\"acc_400\"}}}]},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":3041055971,\"load_duration\":729264049,\"prompt_eval_count\":307,\"prompt_eval_duration\":269625000,\"eval_count\":89,\"eval_duration\":1478531000}"
+      }
+    },
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a banking assistant. Use available tools to check balances."
+            },
+            {
+              "role": "user",
+              "content": "What is the balance of account acc_400? Use get_balance tool."
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "thinking": "The user wants me to check the balance for account \"acc_400\" using the get_balance tool. I have all the required information - they've provided the accountId as \"acc_400\".\n\nI need to call the get_balance function with this parameter.",
+              "tool_calls": [
+                {
+                  "id": "call_15tv98jf",
+                  "function": {
+                    "index": 0,
+                    "name": "get_balance",
+                    "arguments": {
+                      "accountId": "acc_400"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "content": "{\"accountId\":\"acc_400\",\"balance\":1250,\"currency\":\"USD\"}"
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_balance",
+                "description": "Get user bank account balance by ID",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "accountId": {
+                      "type": "string",
+                      "description": "The account identifier"
+                    }
+                  },
+                  "required": ["accountId"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "590",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:14:29 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:14:29.251759503Z\",\"message\":{\"role\":\"assistant\",\"content\":\"Account **acc_400** has a balance of **$1,250 USD**.\",\"thinking\":\"The get_balance tool returned the balance information for account acc_400. The result shows:\\n- Account ID: acc_400\\n- Balance: 1250\\n- Currency: USD\\n\\nI should provide this information to the user in a clear and helpful way.\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":5336604377,\"load_duration\":689005996,\"prompt_eval_count\":431,\"prompt_eval_duration\":66745999,\"eval_count\":85,\"eval_duration\":1564020000}"
+      }
+    }
+  ]
+}

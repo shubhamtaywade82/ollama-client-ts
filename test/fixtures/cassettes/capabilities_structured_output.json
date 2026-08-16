@@ -1,0 +1,65 @@
+{
+  "name": "capabilities_structured_output",
+  "recordedAt": "2026-08-16T17:15:25.498Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Generate product item for Wireless Headphones in electronics, price 79.99, inStock true, tags: audio, bluetooth."
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "format": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "productId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string",
+                "enum": ["electronics", "books", "apparel"]
+              },
+              "price": {
+                "type": "number"
+              },
+              "inStock": {
+                "type": "boolean"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": ["productId", "name", "category", "price", "inStock", "tags"],
+            "additionalProperties": false
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:15:25 GMT",
+          "transfer-encoding": "chunked"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:15:25.492503917Z\",\"message\":{\"role\":\"assistant\",\"content\":\"{\\n  \\\"productId\\\": \\\"WH-001\\\",\\n  \\\"name\\\": \\\"Wireless Bluetooth Headphones\\\",\\n  \\\"category\\\": \\\"electronics\\\",\\n  \\\"price\\\": 79.99,\\n  \\\"inStock\\\": true,\\n  \\\"tags\\\": [\\n    \\\"audio\\\",\\n    \\\"bluetooth\\\"\\n  ]\\n}\",\"thinking\":\"Thinking Process:\\n\\n1.  **Analyze the Request:**\\n    *   Product Type: Wireless Headphones (Electronics).\\n    *   Price: $79.99.\\n    *   Stock Status: In stock (true/false context implies \\\"InStock\\\" boolean or similar, but usually means available for sale).\\n    *   Tags: audio, bluetooth.\\n\\n2.  **Determine Output Format:** The user asked to \\\"Generate product item\\\". This suggests a structured format like JSON, YAML, HTML, Markdown table, etc., commonly used in e-commerce systems (like Shopify, WooCommerce) or data entry contexts. Given the simplicity of the request and common usage patterns for such prompts, I should provide a clear, usable representation that looks like an actual database record or product card.\\n\\n3.  **Drafting Content:**\\n    *   Name: Needs to be catchy but relevant (e.g., \\\"ProSound Wireless Headphones\\\"). Let's go with something generic yet professional since no specific brand was requested. Maybe just the name based on tags? No, a descriptive title is better. \\\"Wireless Bluetooth Noise-Canceling Headphones\\\".\\n    *   Price: $79.99 USD (standard currency).\\n    *   Stock Status: true or 1/available. The prompt says `inStock true`. I'll use that exact phrasing in the JSON structure for clarity, but maybe make it a boolean field if possible. Let's stick to standard e-commerce fields like \\\"price\\\", \\\"stock_status\\\".\\n    *   Tags: audio, bluetooth (JSON array).\\n\\n4.  **Selecting Format:** Markdown table is often best for quick reading and display in chat interfaces. JSON is good for programmatic use. I'll provide a structured object that looks like an API response or database record to be most useful. Let's go with a clean Markdown representation first, then maybe a code block if needed? No, just the product item itself usually implies text/markdown structure unless specified otherwise. However, since it asks for \\\"Generate product item\\\", providing a JSON-like object is often safer for data processing tasks implied by such prompts (e.g., API integration). Let's provide both or choose the most readable one. I'll use Markdown with clear fields to ensure readability as an e-commerce listing card.\\n\\n    *Wait, looking at similar requests:* Often users want this in a specific format like JSON for backend systems. But without explicit instruction on format (JSON vs HTML vs Table), a clean Markdown table is usually the most human-readable \\\"product item\\\". However, since I'm acting as an AI assistant generating data structures often used by developers or e-commerce platforms... Let's provide it as a structured object that can be easily copied into JSON.\\n\\n    *Re-evaluating:* The prompt looks like a request for product schema generation (e.g., Shopify Product Schema).\\n    Fields: name, price, stock_status, tags.\\n\\n5.  **Refining the Output:**\\n    Let's create a structured object that mimics an API response or database record. This is usually what \\\"Generate product item\\\" implies in technical contexts.\\n\\n    *   Name: Wireless Bluetooth Headphones (Generic) -\\u003e Better name based on context? Maybe just keep it simple as per prompt constraints, but make it sound like a real product.\\n    *   Price: 79.99\\n    *   Stock Status: true\\n    *   Tags: [\\\"audio\\\", \\\"bluetooth\\\"]\\n\\n6.  **Final Decision:** I will provide the data in a clean JSON format as that is standard for generating structured items programmatically, but formatted nicely so it's also readable. Actually, looking at how these prompts are usually handled by users (often testing schema generation), a Markdown table or simple key-value list might be better. Let's go with a clear **JSON** block because \\\"Generate product item\\\" often implies data structure creation for systems like Shopify/WooCommerce where JSON is the standard payload format.\\n\\n    *Wait, simpler approach:* Just output it as if I'm filling out an order form or database record in Markdown table style? No, let's do a structured object that looks professional.\\n    Actually, to be safe and most helpful for general use (like copy-pasting into a system), JSON is best.\\n\\n    *Wait, one more check:* The prompt says \\\"inStock true\\\". I should ensure the boolean value reflects this clearly.\\n\\n    Let's draft:\\n    ```json\\n    {\\n      \\\"name\\\": \\\"...\\\",\\n      ...\\n    }\\n    ```\\n    Or just a text representation?\\n    Okay, let's provide it as a structured product record in Markdown for readability and JSON for data utility. I'll prioritize the structure that looks like an e-commerce database entry.\\n\\n    Let's try to make it look exactly like a Shopify Product Schema or similar standard format since \\\"inStock true\\\" is specific terminology often used there (e.g., `stock_status: 'In Stock'`).\\n    \\n    Actually, let's keep it simple and direct. A Markdown table with the fields clearly labeled is usually what users want when they ask to generate an item for display purposes or data entry without specifying a language format.\\n\\n    *Wait, I'll provide JSON.* It's more robust for \\\"generation\\\" tasks that imply programmatic output.\\n    \\n    Fields: `id`, `name`, `description`, `price`, `stock_status`, `tags`. The prompt didn't ask for ID or description but asked to generate the item based on constraints (Price, Stock, Tags). I will include relevant fields like Name and Description placeholders if needed, but strictly following the input is safer.\\n    \\n    Let's stick to the specific data points provided + standard product metadata.\\n\\n    *Plan:* Create a JSON object containing all necessary fields for an e-commerce item based on the constraints given (Name inferred from context or generic). I will infer a name like \\\"Wireless Bluetooth Headphones\\\" and ensure price, stock_status, and tags match exactly what was requested to avoid hallucination of extra data.\\n\\n    *Wait, strict adherence:* The prompt asks me to generate an item for Wireless Headphones... with specific constraints.\\n    \\n    Let's create the JSON structure:\\n    ```json\\n    {\\n      \\\"product_id\\\": 1234567890, // Optional but good practice? No, keep it simple.\\n      \\\"name\\\": \\\"Wireless Bluetooth Headphones\\\",\\n      \\\"price\\\": 79.99,\\n      \\\"stock_status\\\": true,\\n      \\\"tags\\\": [\\\"audio\\\", \\\"bluetooth\\\"]\\n    }\\n    ```\\n\\n    Actually, looking at the instruction again: \\\"Generate product item\\\". I will format it as a clean Markdown table for easy reading and copy-pasting into an e-commerce system. It's universally understood. No need to over-engineer JSON unless asked specifically for API payload. But wait, if this is for backend integration...\\n    Okay, I'll provide the data in a structured way that looks like a database record or product card.\\n\\n    Let's go with a clean Markdown table format as it's most visually appealing and readable for general consumption of \\\"product item\\\".\\n\\n    Wait, checking constraints again: `inStock true`. In JSON this is boolean.\\n    \\n    Okay, I will output the data in a structured way that looks like an API response or database record to ensure accuracy on fields.\\n\\n    *Self-Correction:* The user might just want text representation of the product card (like for a website). But since they asked \\\"Generate\\\", it implies creating the object itself.\\n    \\n    Let's provide both: A clear JSON block and a Markdown table version, or just one? I'll choose **JSON** because it preserves data integrity best when copying into systems that expect structured fields like `price`, `stock_status`.\\n\\n    Wait, actually, looking at common LLM usage patterns for this specific prompt style (\\\"Generate product item...\\\"), users often want the output to be ready-to-use in a system. I will provide a JSON object with all necessary keys including inferred ones (like name) but strictly adhering to provided constraints where possible.\\n\\n    Let's refine:\\n    Name: \\\"Wireless Bluetooth Headphones\\\" (Inferred from prompt).\\n    Price: 79.99\\n    Stock Status: true\\n    Tags: [\\\"audio\\\", \\\"bluetooth\\\"]\\n\\n    Okay, I'll format it as a JSON object for programmatic use and also display the key-value pairs clearly in Markdown below or above? No, just one clear block is better to avoid confusion. Let's do a clean JSON structure that looks like an API response.\\n    \\n    Actually, let's look at similar requests online. Often users want this formatted as:\\n    ```json\\n    {\\n      \\\"name\\\": \\\"...\\\",\\n      ...\\n    }\\n    ```\\n    I will provide the data in a structured format suitable for e-commerce systems (like Shopify Product Schema).\\n\\n    Wait, simpler is better. Just output it clearly labeled.\\n    \\n    Let's create:\\n    **Product Name:** Wireless Bluetooth Headphones\\n    **Price:** $79.99 USD\\n    **Stock Status:** In Stock\\n    **Tags:** audio, bluetooth\\n    \\n    But the prompt asked to \\\"Generate product item\\\". I will provide a JSON object that encapsulates this information accurately for data processing purposes.\\n\\n    Okay, final plan: Provide a clean JSON block representing the product record with all specified fields and standard metadata (like currency). This is most useful for developers or systems consuming it.\\n    \\n    Wait, one detail: \\\"inStock true\\\". I will use `true` in boolean context if possible, but since this might be text-based input to an e-commerce system that expects strings... No, the prompt says `inStock true`. In JSON/Code contexts, usually booleans are expected. But for a product card display (Markdown), \\\"In Stock\\\" is better.\\n    I will use standard boolean values in code blocks and descriptive labels elsewhere if needed.\\n\\n    Let's go with **JSON** as it handles the data types correctly (`price` number, `stock_status` boolean).\\n\\n    Wait, actually, looking at the prompt again: \\\"Generate product item for Wireless Headphones...\\\".\\n    \\n    Okay, I will generate a structured JSON object that represents this specific product record. This is the most precise interpretation of \\\"generate an item\\\" in a technical context.\\n\\n    Fields to include based on constraints + standard fields:\\n    - name (inferred)\\n    - price\\n    - stock_status\\n    - tags\\n    \\n    I will add `currency` as USD since it's implied by $79.99, but not explicitly stated... wait, prompt says \\\"price 79.99\\\". Usually implies currency is US Dollar or generic. I'll use `$`.\\n\\n    Okay, ready to write.\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":47625619488,\"load_duration\":642294487,\"prompt_eval_count\":2315,\"prompt_eval_duration\":960402000,\"eval_count\":77,\"eval_duration\":1590213000}"
+      }
+    }
+  ]
+}

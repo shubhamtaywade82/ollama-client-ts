@@ -16,13 +16,16 @@ export function toTextStream<TChunk, TFinal>(
   return new ReadableStream<string>({
     async pull(controller) {
       try {
-        const { done, value } = await iterator.next();
-        if (done) {
-          controller.close();
-          return;
-        }
-        if (value.type === 'token' && value.data.delta) {
-          controller.enqueue(value.data.delta);
+        while (true) {
+          const { done, value } = await iterator.next();
+          if (done) {
+            controller.close();
+            return;
+          }
+          if (value.type === 'token' && value.data.delta) {
+            controller.enqueue(value.data.delta);
+            return;
+          }
         }
       } catch (err) {
         controller.error(err);

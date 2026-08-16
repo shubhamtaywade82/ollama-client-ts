@@ -1,5 +1,5 @@
 /**
- * Main OllamaClient class.
+ * Main OllamaClient class with failover, streaming, structured outputs, and ecosystem integrations.
  */
 
 import { z } from 'zod';
@@ -62,7 +62,7 @@ import type {
 
 export class OllamaClient {
   readonly registry: EndpointRegistry;
-  readonly modelsClient: ModelsClient;
+  readonly models: ModelsClient;
   private readonly retryConfig: RetryConfig;
   private readonly timeoutMs: number;
   private readonly failoverCodes: Set<string>;
@@ -87,7 +87,11 @@ export class OllamaClient {
       typeof config.retries === 'number'
         ? { ...DEFAULT_RETRY_CONFIG, maxRetries: config.retries }
         : { ...DEFAULT_RETRY_CONFIG, ...config.retries };
-    this.modelsClient = new ModelsClient((op, opts) => this.executeWithFailover(op, opts));
+    this.models = new ModelsClient((op, opts) => this.executeWithFailover(op, opts));
+  }
+
+  get modelsClient(): ModelsClient {
+    return this.models;
   }
 
   async executeWithFailover<T>(
@@ -129,115 +133,107 @@ export class OllamaClient {
 
   // --- Chat ---
   chat(
-    request: ChatRequestOptions & { stream: true },
+    req: ChatRequestOptions & { stream: true },
   ): Promise<OllamaStream<ChatResponse, ChatStreamResult>>;
-  chat(request: ChatRequestOptions & { stream?: false | undefined }): Promise<ChatResponse>;
+  chat(req: ChatRequestOptions & { stream?: false | undefined }): Promise<ChatResponse>;
   chat(
-    request: ChatRequestOptions,
+    req: ChatRequestOptions,
   ): Promise<ChatResponse | OllamaStream<ChatResponse, ChatStreamResult>>;
   async chat(
-    request: ChatRequestOptions,
+    req: ChatRequestOptions,
   ): Promise<ChatResponse | OllamaStream<ChatResponse, ChatStreamResult>> {
-    if (request.stream) {
+    if (req.stream) {
       return this.executeWithFailover(async (http, signal) => {
         const stream = await http.requestStream<ChatResponse>({
           path: '/api/chat',
-          body: { ...request, stream: true },
+          body: { ...req, stream: true },
           signal,
         });
         return normalizeChatStream(stream);
-      }, request);
+      }, req);
     }
     return this.executeWithFailover(
       (http, signal) =>
-        http.request<ChatResponse>({
-          path: '/api/chat',
-          body: { ...request, stream: false },
-          signal,
-        }),
-      request,
+        http.request<ChatResponse>({ path: '/api/chat', body: { ...req, stream: false }, signal }),
+      req,
     );
   }
 
   chatStream(
-    request: Omit<ChatRequestOptions, 'stream'>,
+    req: Omit<ChatRequestOptions, 'stream'>,
   ): Promise<OllamaStream<ChatResponse, ChatStreamResult>> {
-    return this.chat({ ...request, stream: true });
+    return this.chat({ ...req, stream: true });
   }
 
-  async chatText(request: Omit<ChatRequestOptions, 'stream'>): Promise<string> {
-    const res = await this.chat({ ...request, stream: false });
+  async chatText(req: Omit<ChatRequestOptions, 'stream'>): Promise<string> {
+    const res = await this.chat({ ...req, stream: false });
     return res.message.content;
   }
 
   async chatWithSchema<T>(
-    request: Omit<ChatRequestOptions, 'stream' | 'format'>,
+    req: Omit<ChatRequestOptions, 'stream' | 'format'>,
     schema: z.ZodType<T>,
   ): Promise<T> {
-    const format = zodToJsonSchema(schema);
-    const res = await this.chat({ ...request, format, stream: false });
+    const res = await this.chat({ ...req, format: zodToJsonSchema(schema), stream: false });
     return parseStructuredOutput(res.message.content, schema);
   }
 
   // --- Generate ---
   generate(
-    request: GenerateRequestOptions & { stream: true },
+    req: GenerateRequestOptions & { stream: true },
   ): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>>;
+  generate(req: GenerateRequestOptions & { stream?: false | undefined }): Promise<GenerateResponse>;
   generate(
-    request: GenerateRequestOptions & { stream?: false | undefined },
-  ): Promise<GenerateResponse>;
-  generate(
-    request: GenerateRequestOptions,
+    req: GenerateRequestOptions,
   ): Promise<GenerateResponse | OllamaStream<GenerateResponse, GenerateStreamResult>>;
   async generate(
-    request: GenerateRequestOptions,
+    req: GenerateRequestOptions,
   ): Promise<GenerateResponse | OllamaStream<GenerateResponse, GenerateStreamResult>> {
-    if (request.stream) {
+    if (req.stream) {
       return this.executeWithFailover(async (http, signal) => {
         const stream = await http.requestStream<GenerateResponse>({
           path: '/api/generate',
-          body: { ...request, stream: true },
+          body: { ...req, stream: true },
           signal,
         });
         return normalizeGenerateStream(stream);
-      }, request);
+      }, req);
     }
     return this.executeWithFailover(
       (http, signal) =>
         http.request<GenerateResponse>({
           path: '/api/generate',
-          body: { ...request, stream: false },
+          body: { ...req, stream: false },
           signal,
         }),
-      request,
+      req,
     );
   }
 
   generateStream(
-    request: Omit<GenerateRequestOptions, 'stream'>,
+    req: Omit<GenerateRequestOptions, 'stream'>,
   ): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>> {
-    return this.generate({ ...request, stream: true });
+    return this.generate({ ...req, stream: true });
   }
 
-  async generateText(request: Omit<GenerateRequestOptions, 'stream'>): Promise<string> {
-    const res = await this.generate({ ...request, stream: false });
+  async generateText(req: Omit<GenerateRequestOptions, 'stream'>): Promise<string> {
+    const res = await this.generate({ ...req, stream: false });
     return res.response;
   }
 
   async generateWithSchema<T>(
-    request: Omit<GenerateRequestOptions, 'stream' | 'format'>,
+    req: Omit<GenerateRequestOptions, 'stream' | 'format'>,
     schema: z.ZodType<T>,
   ): Promise<T> {
-    const format = zodToJsonSchema(schema);
-    const res = await this.generate({ ...request, format, stream: false });
+    const res = await this.generate({ ...req, format: zodToJsonSchema(schema), stream: false });
     return parseStructuredOutput(res.response, schema);
   }
 
   // --- Embeddings ---
-  embed(request: EmbedRequestOptions): Promise<EmbedResponse> {
+  embed(req: EmbedRequestOptions): Promise<EmbedResponse> {
     return this.executeWithFailover(
-      (http, signal) => http.request<EmbedResponse>({ path: '/api/embed', body: request, signal }),
-      request,
+      (http, signal) => http.request<EmbedResponse>({ path: '/api/embed', body: req, signal }),
+      req,
     );
   }
 
@@ -249,89 +245,80 @@ export class OllamaClient {
     return res.embeddings;
   }
 
-  embeddings(request: EmbeddingsRequestOptions): Promise<EmbeddingsResponse> {
+  embeddings(req: EmbeddingsRequestOptions): Promise<EmbeddingsResponse> {
     return this.executeWithFailover(
       (http, signal) =>
-        http.request<EmbeddingsResponse>({ path: '/api/embeddings', body: request, signal }),
-      request,
+        http.request<EmbeddingsResponse>({ path: '/api/embeddings', body: req, signal }),
+      req,
     );
   }
 
   // --- Model Operations (Delegated to ModelsClient) ---
   listModels(): Promise<ModelResponse[]> {
-    return this.modelsClient.list();
+    return this.models.list();
   }
-  models(): Promise<ModelResponse[]> {
-    return this.modelsClient.list();
-  }
-  showModel(request: ShowRequestOptions): Promise<ShowResponse> {
-    return this.modelsClient.show(request);
+  showModel(req: ShowRequestOptions): Promise<ShowResponse> {
+    return this.models.show(req);
   }
   pullModel(
-    request: PullRequestOptions & { stream: true },
+    r: PullRequestOptions & { stream: true },
   ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
+  pullModel(r: PullRequestOptions & { stream?: false | undefined }): Promise<ProgressResponse>;
   pullModel(
-    request: PullRequestOptions & { stream?: false | undefined },
-  ): Promise<ProgressResponse>;
-  pullModel(
-    request: PullRequestOptions,
+    r: PullRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    return this.modelsClient.pull(request);
+    return this.models.pull(r);
   }
   pushModel(
-    request: PushRequestOptions & { stream: true },
+    r: PushRequestOptions & { stream: true },
   ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
+  pushModel(r: PushRequestOptions & { stream?: false | undefined }): Promise<ProgressResponse>;
   pushModel(
-    request: PushRequestOptions & { stream?: false | undefined },
-  ): Promise<ProgressResponse>;
-  pushModel(
-    request: PushRequestOptions,
+    r: PushRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    return this.modelsClient.push(request);
+    return this.models.push(r);
   }
   createModel(
-    request: CreateRequestOptions & { stream: true },
+    r: CreateRequestOptions & { stream: true },
   ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
+  createModel(r: CreateRequestOptions & { stream?: false | undefined }): Promise<ProgressResponse>;
   createModel(
-    request: CreateRequestOptions & { stream?: false | undefined },
-  ): Promise<ProgressResponse>;
-  createModel(
-    request: CreateRequestOptions,
+    r: CreateRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    return this.modelsClient.create(request);
+    return this.models.create(r);
   }
-  deleteModel(request: DeleteRequestOptions): Promise<StatusResponse> {
-    return this.modelsClient.delete(request);
+  deleteModel(req: DeleteRequestOptions): Promise<StatusResponse> {
+    return this.models.delete(req);
   }
-  copyModel(request: CopyRequestOptions): Promise<StatusResponse> {
-    return this.modelsClient.copy(request);
+  copyModel(req: CopyRequestOptions): Promise<StatusResponse> {
+    return this.models.copy(req);
   }
   ps(): Promise<PsResponse> {
-    return this.modelsClient.ps();
+    return this.models.ps();
   }
   version(): Promise<VersionResponse> {
-    return this.modelsClient.version();
+    return this.models.version();
   }
   createBlob(digest: string, data: BinaryBody): Promise<void> {
-    return this.modelsClient.createBlob(digest, data);
+    return this.models.createBlob(digest, data);
   }
   checkBlob(digest: string): Promise<boolean> {
-    return this.modelsClient.checkBlob(digest);
+    return this.models.checkBlob(digest);
   }
 
   // --- Web Endpoints ---
-  webSearch(request: WebSearchRequestOptions): Promise<WebSearchResponse> {
+  webSearch(req: WebSearchRequestOptions): Promise<WebSearchResponse> {
     return this.executeWithFailover(
       (http, signal) =>
-        http.request<WebSearchResponse>({ path: '/api/websearch', body: request, signal }),
-      request,
+        http.request<WebSearchResponse>({ path: '/api/websearch', body: req, signal }),
+      req,
     );
   }
-  webFetch(request: WebFetchRequestOptions): Promise<WebFetchResponse> {
+  webFetch(req: WebFetchRequestOptions): Promise<WebFetchResponse> {
     return this.executeWithFailover(
       (http, signal) =>
-        http.request<WebFetchResponse>({ path: '/api/webfetch', body: request, signal }),
-      request,
+        http.request<WebFetchResponse>({ path: '/api/webfetch', body: req, signal }),
+      req,
     );
   }
 
@@ -350,7 +337,7 @@ export class OllamaClient {
     return this.registry.status();
   }
 
-  // --- OpenAI & Anthropic Compatibility Adapters ---
+  // --- Compatibility Adapters ---
   get openai(): OpenAICompatClient {
     const ep = this.registry.candidates()[0];
     return new OpenAICompatClient(

@@ -1,0 +1,121 @@
+{
+  "name": "agent_tool_error_recovery",
+  "recordedAt": "2026-08-16T17:15:22.753Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Check inventory for SKU ITEM_99 using check_inventory tool."
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "check_inventory",
+                "description": "Checks stock inventory database",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "sku": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sku"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "846",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:14:39 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:14:39.337982118Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"thinking\":\"The user wants me to check inventory for a specific SKU (ITEM_99) using the check_inventory tool. I need to call this tool with the sku parameter set to \\\"ITEM_99\\\".\\n\\nLooking at the function definition:\\n- Function name: check_inventory\\n- Required parameters: [\\\"sku\\\"] - so I need to provide an SKU value\\n- The user wants me to use ITEM_99 as the SKU\\n\\nI have all the information needed to make this tool call.\",\"tool_calls\":[{\"id\":\"call_5oeiab9b\",\"function\":{\"index\":0,\"name\":\"check_inventory\",\"arguments\":{\"sku\":\"ITEM_99\"}}}]},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":9374307452,\"load_duration\":1418750868,\"prompt_eval_count\":278,\"prompt_eval_duration\":43125000,\"eval_count\":133,\"eval_duration\":2176161000}"
+      }
+    },
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:2b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Check inventory for SKU ITEM_99 using check_inventory tool."
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "thinking": "The user wants me to check inventory for a specific SKU (ITEM_99) using the check_inventory tool. I need to call this tool with the sku parameter set to \"ITEM_99\".\n\nLooking at the function definition:\n- Function name: check_inventory\n- Required parameters: [\"sku\"] - so I need to provide an SKU value\n- The user wants me to use ITEM_99 as the SKU\n\nI have all the information needed to make this tool call.",
+              "tool_calls": [
+                {
+                  "id": "call_5oeiab9b",
+                  "function": {
+                    "index": 0,
+                    "name": "check_inventory",
+                    "arguments": {
+                      "sku": "ITEM_99"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "content": "Database connection timed out"
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "check_inventory",
+                "description": "Checks stock inventory database",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "sku": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["sku"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "1325",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:15:22 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:2b\",\"created_at\":\"2026-08-16T17:15:22.749665254Z\",\"message\":{\"role\":\"assistant\",\"content\":\"I was able to attempt checking the inventory for SKU ITEM_99, but encountered a database timeout error:\\n\\n**Error:** Database connection timed out\\n\\nThis typically indicates one of the following issues:\\n- Inventory data is currently not available in the system\\n- There may be an issue with your current network or server connection\\n- The item might have been removed from inventory recently\\n\\nWould you like me to try checking a different SKU, or would you prefer assistance with something else?\",\"thinking\":\"The inventory check for SKU ITEM_99 returned an error message \\\"Database connection timed out\\\". This indicates that there was a problem connecting to the database, but I should still report this result back to the user.\\n\\nI'll let them know about the timeout issue and what it means in practical terms - likely that either:\\n1. The inventory data isn't available yet\\n2. There's an issue with the system connection\\n3. The SKU might not exist or be unavailable\\n\\nLet me provide a clear response to the user.\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":42663625023,\"load_duration\":832569267,\"prompt_eval_count\":430,\"prompt_eval_duration\":51239000,\"eval_count\":209,\"eval_duration\":3427697000}"
+      }
+    }
+  ]
+}
