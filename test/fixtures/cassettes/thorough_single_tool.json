@@ -1,0 +1,53 @@
+{
+  "name": "thorough_single_tool",
+  "recordedAt": "2026-08-16T17:09:03.258Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "llama3.2:1b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "What is the square of 9? You MUST call calculate_square tool."
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "calculate_square",
+                "description": "Calculates square of a number",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["number"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "412",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:09:03 GMT"
+        },
+        "bodyText": "{\"model\":\"llama3.2:1b\",\"created_at\":\"2026-08-16T17:09:03.248479355Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[{\"id\":\"call_1qsjoaep\",\"function\":{\"index\":0,\"name\":\"calculate_square\",\"arguments\":{\"number\":\"9\"}}}]},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":956959536,\"load_duration\":347708128,\"prompt_eval_count\":164,\"prompt_eval_duration\":189431000,\"eval_count\":25,\"eval_duration\":399237000}"
+      }
+    }
+  ]
+}

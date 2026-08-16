@@ -1,0 +1,78 @@
+{
+  "name": "thorough_nested_schema",
+  "recordedAt": "2026-08-16T17:08:20.850Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "llama3.2:1b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Recipe for Pancakes. Difficulty: easy. Cooking time: 15 minutes. Vegetarian: true. Ingredients: Flour (2 cups), Milk (1 cup)."
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "format": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "recipeName": {
+                "type": "string"
+              },
+              "difficulty": {
+                "type": "string",
+                "enum": ["easy", "medium", "hard"]
+              },
+              "cookingTimeMinutes": {
+                "type": "number"
+              },
+              "ingredients": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["name", "amount"],
+                  "additionalProperties": false
+                }
+              },
+              "isVegetarian": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "recipeName",
+              "difficulty",
+              "cookingTimeMinutes",
+              "ingredients",
+              "isVegetarian"
+            ],
+            "additionalProperties": false
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "532",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:08:20 GMT"
+        },
+        "bodyText": "{\"model\":\"llama3.2:1b\",\"created_at\":\"2026-08-16T17:08:20.837539495Z\",\"message\":{\"role\":\"assistant\",\"content\":\"{ \\\"recipeName\\\": \\\"Easy Fluffy Pancakes\\\", \\\"difficulty\\\": \\\"easy\\\", \\\"cookingTimeMinutes\\\": 15, \\\"ingredients\\\": [ {\\\"name\\\": \\\"Flour\\\", \\\"amount\\\": \\\"2 cups\\\"}, {\\\"name\\\": \\\"Milk\\\", \\\"amount\\\": \\\"1 cup\\\"}], \\\"isVegetarian\\\": true }\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":1658789782,\"load_duration\":410079578,\"prompt_eval_count\":58,\"prompt_eval_duration\":70181000,\"eval_count\":76,\"eval_duration\":1164969000}"
+      }
+    }
+  ]
+}

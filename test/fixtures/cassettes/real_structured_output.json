@@ -1,0 +1,52 @@
+{
+  "name": "real_structured_output",
+  "recordedAt": "2026-08-16T17:01:49.049Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen2.5:0.5b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Provide info for Paris in France. Estimate population around 2 million."
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "format": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              },
+              "populationEstimateMillion": {
+                "type": "number"
+              }
+            },
+            "required": ["city", "country", "populationEstimateMillion"],
+            "additionalProperties": false
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "393",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:01:49 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen2.5:0.5b\",\"created_at\":\"2026-08-16T17:01:49.045279556Z\",\"message\":{\"role\":\"assistant\",\"content\":\"{\\n  \\\"city\\\": \\\"Paris\\\",\\n  \\\"country\\\": \\\"France\\\",\\n  \\\"populationEstimateMillion\\\": 2019\\n}\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":1087461624,\"load_duration\":413110966,\"prompt_eval_count\":43,\"prompt_eval_duration\":86132000,\"eval_count\":31,\"eval_duration\":575496000}"
+      }
+    }
+  ]
+}

@@ -3,7 +3,7 @@
  */
 
 import { OllamaAgentMaxIterationsError } from '../errors.js';
-import type { Message, ToolDefinition } from '../types.js';
+import type { Message, ModelOptions, ToolDefinition } from '../types.js';
 import type { ToolRegistry } from '../tools/registry.js';
 import type { AgentConfig, AgentHooks, AgentResult, AgentRunInput, AgentTurn } from './types.js';
 
@@ -12,6 +12,7 @@ export interface AgentChatClient {
     readonly model: string;
     readonly messages: readonly Message[];
     readonly tools?: readonly ToolDefinition[] | undefined;
+    readonly options?: ModelOptions | undefined;
     readonly think?: boolean | 'low' | 'medium' | 'high' | 'max' | undefined;
     readonly stream?: false | undefined;
     readonly signal?: AbortSignal | undefined;
@@ -43,6 +44,7 @@ export class Agent {
         model: input.model,
         messages: history,
         ...(toolDefs !== undefined ? { tools: toolDefs } : {}),
+        ...(input.options !== undefined ? { options: input.options } : {}),
         ...(input.think !== undefined ? { think: input.think } : {}),
         stream: false,
         ...(input.signal !== undefined ? { signal: input.signal } : {}),

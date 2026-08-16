@@ -1,0 +1,35 @@
+{
+  "name": "thorough_thinking_non_stream",
+  "recordedAt": "2026-08-16T17:08:49.099Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen3.5:0.8b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Which number is larger: 9.11 or 9.9? Think carefully."
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:08:49 GMT",
+          "transfer-encoding": "chunked"
+        },
+        "bodyText": "{\"model\":\"qwen3.5:0.8b\",\"created_at\":\"2026-08-16T17:08:49.096160548Z\",\"message\":{\"role\":\"assistant\",\"content\":\"To determine which number is larger, we compare them digit by digit from left to right:\\n\\n**Step 1: Compare the whole numbers (integers)**\\nBoth numbers start with \\\"9\\\", so they are equal at this point. $9 = 9$.\\n\\n**Step 2: Compare the decimal parts**\\nNow look at the digits after the first decimal point ($0$):\\n*   **Number A:** The digit is **1**. (This represents tenths place)\\n*   **Number B:** The digit is **9**. (This represents tenths place)\\n\\nSince $9 \\u003e 1$, number with \\\"9\\\" in the tenths position is larger.\\n\\n**Conclusion:**\\n$9.9$ is larger than $9.11$.\",\"thinking\":\"Thinking Process:\\n\\n1.  **Analyze the Request:** The user wants to compare two numbers, $9.11$ and $9.9$, and determine which one is larger. They ask for a careful thought process (\\\"Think carefully\\\").\\n\\n2.  **Identify the Numbers:**\\n    *   Number A: $9.11$ (Nine point eleven)\\n    *   Number B: $9.9$ (Nine point nine)\\n\\n3.  **Compare by Place Value/Decimal Structure:**\\n    *   Both numbers have two decimal places in their integer part, but the first digit is '9' for both. So they are comparable to each other at that position.\\n    *   Look at the tenths place (first digit after the decimal point).\\n        *   Number A: $1$\\n        *   Number B: $9$\\n\\n4.  **Compare:** Since $9 \\u003e 1$, number B is larger than number A.\\n\\n5.  **Formulate the Output:** State clearly that $9.9$ is larger and explain why (comparing digits from left to right).\\n\\n6.  **Review/Refine:** Is there any trick? No, it's a straightforward comparison of decimal numbers where one has more significant figures in the tenths place compared to another with fewer.\\n    *   $9.11$ vs $9.9$.\\n    *   Compare integer parts: Both are 9. Equal.\\n    *   Compare fractional part (tenths): $0 \\u003c 9$, so $9 \\u003e 1$.\\n\\n7.  **Final Answer:** $9.9$ is larger. Explain the comparison step-by-step.cw\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":7497529470,\"load_duration\":847533838,\"prompt_eval_count\":29,\"prompt_eval_duration\":52013000,\"eval_count\":524,\"eval_duration\":6491684000}"
+      }
+    }
+  ]
+}

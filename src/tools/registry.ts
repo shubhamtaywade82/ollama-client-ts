@@ -7,6 +7,7 @@ import type { ToolCall, ToolDefinition } from '../types.js';
 import type { Tool, ToolExecutionContext, ToolExecutionResult } from './types.js';
 
 export interface ToolRegistryOptions {
+  readonly tools?: readonly Tool<never, unknown>[] | undefined;
   readonly onError?: ((error: Error, toolCall: ToolCall) => string) | undefined;
 }
 
@@ -14,8 +15,16 @@ export class ToolRegistry {
   private readonly tools = new Map<string, Tool<never, unknown>>();
   private readonly onError?: ((error: Error, toolCall: ToolCall) => string) | undefined;
 
-  constructor(options?: ToolRegistryOptions | undefined) {
-    this.onError = options?.onError;
+  constructor(toolsOrOptions?: readonly Tool<never, unknown>[] | ToolRegistryOptions | undefined) {
+    if (Array.isArray(toolsOrOptions)) {
+      this.registerMany(toolsOrOptions);
+    } else if (toolsOrOptions !== undefined) {
+      const opts = toolsOrOptions as ToolRegistryOptions;
+      this.onError = opts.onError;
+      if (opts.tools) {
+        this.registerMany(opts.tools);
+      }
+    }
   }
 
   register(tool: Tool<never, unknown>): this {

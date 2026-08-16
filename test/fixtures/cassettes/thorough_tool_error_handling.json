@@ -1,0 +1,120 @@
+{
+  "name": "thorough_tool_error_handling",
+  "recordedAt": "2026-08-16T17:09:12.397Z",
+  "interactions": [
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen2.5:0.5b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Calculate 10 / 0 with risky_calculator. If it fails, report error."
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "risky_calculator",
+                "description": "Performs arithmetic calculation",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["query"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "416",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:09:11 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen2.5:0.5b\",\"created_at\":\"2026-08-16T17:09:11.941747328Z\",\"message\":{\"role\":\"assistant\",\"content\":\"\",\"tool_calls\":[{\"id\":\"call_dh32r8zr\",\"function\":{\"index\":0,\"name\":\"risky_calculator\",\"arguments\":{\"query\":\"10 / 0\"}}}]},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":547176364,\"load_duration\":304128762,\"prompt_eval_count\":162,\"prompt_eval_duration\":62089000,\"eval_count\":26,\"eval_duration\":169343000}"
+      }
+    },
+    {
+      "request": {
+        "url": "http://localhost:11434/api/chat",
+        "method": "POST",
+        "body": {
+          "model": "qwen2.5:0.5b",
+          "messages": [
+            {
+              "role": "user",
+              "content": "Calculate 10 / 0 with risky_calculator. If it fails, report error."
+            },
+            {
+              "role": "assistant",
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_dh32r8zr",
+                  "function": {
+                    "index": 0,
+                    "name": "risky_calculator",
+                    "arguments": {
+                      "query": "10 / 0"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "role": "tool",
+              "content": "Division by zero error"
+            }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "risky_calculator",
+                "description": "Performs arithmetic calculation",
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "query": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["query"]
+                }
+              }
+            }
+          ],
+          "options": {
+            "temperature": 0
+          },
+          "stream": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "statusText": "OK",
+        "headers": {
+          "content-length": "406",
+          "content-type": "application/json; charset=utf-8",
+          "date": "Sun, 16 Aug 2026 17:09:12 GMT"
+        },
+        "bodyText": "{\"model\":\"qwen2.5:0.5b\",\"created_at\":\"2026-08-16T17:09:12.395168211Z\",\"message\":{\"role\":\"assistant\",\"content\":\"The calculation failed because division by zero is undefined in mathematics. I will report an error for you.\"},\"done\":true,\"done_reason\":\"stop\",\"total_duration\":450171820,\"load_duration\":278159265,\"prompt_eval_count\":209,\"prompt_eval_duration\":26088000,\"eval_count\":21,\"eval_duration\":139136000}"
+      }
+    }
+  ]
+}
