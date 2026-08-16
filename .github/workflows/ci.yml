@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ["18", "20", "22"]
+        node-version: ["20", "22"]
 
     steps:
       - uses: actions/checkout@v4
@@ -51,9 +51,10 @@ jobs:
 
       - name: Verify consumer tarball installation and module resolution
         run: |
-          npm pack --pack-destination /tmp
-          mkdir -p /tmp/consumer && cd /tmp/consumer
+          TARBALL=$(npm pack --pack-destination /tmp | tail -n 1)
+          mkdir -p /tmp/consumer
+          cd /tmp/consumer
           echo '{"name":"consumer","version":"1.0.0"}' > package.json
-          npm install /tmp/*.tgz
+          npm install "/tmp/${TARBALL}"
           node -e "const { OllamaClient } = require('@shubhamtaywade82/ollama-client-ts'); if (typeof OllamaClient !== 'function') throw new Error('CJS entry broken');"
           node --input-type=module -e "import { OllamaClient } from '@shubhamtaywade82/ollama-client-ts'; if (typeof OllamaClient !== 'function') throw new Error('ESM entry broken');"
