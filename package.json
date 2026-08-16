@@ -99,8 +99,8 @@
     "example": "tsx",
     "prepublishOnly": "npm run clean && npm run typecheck && npm run lint && npm test && npm run build"
   },
-  "dependencies": {
-    "zod": "^4.0.0"
+  "peerDependencies": {
+    "zod": "^3.22.0 || ^4.0.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
@@ -116,6 +116,7 @@
     "tsx": "^4.23.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.62.1",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "zod": "^4.0.0"
   }
 }

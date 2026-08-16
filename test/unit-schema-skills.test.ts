@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { parseStructuredOutput, zodToJsonSchema } from '../src/schema/zod.js';
+import { parseStructuredOutput, zodToJsonSchema, zodV3ToJsonSchema } from '../src/schema/zod.js';
 import { parseFrontmatter } from '../src/skills/frontmatter.js';
 import { applySkill } from '../src/skills/compose.js';
 import { OllamaToolValidationError } from '../src/errors.js';
@@ -21,6 +21,36 @@ describe('Unit: Schema & Skills', () => {
       expect(properties['name']?.['type']).toBe('string');
       expect(properties['role']?.['enum']).toEqual(['admin', 'user']);
       expect(properties['skills']?.['type']).toBe('array');
+    });
+
+    it('falls back to a structural walk of the Zod v3 `_def` shape when `z.toJSONSchema` is unavailable', () => {
+      // Simulates a Zod v3 schema instance: v3 has no `z.toJSONSchema`, and its
+      // internal `_def.typeName` shape differs from v4's `_zod.def`.
+      const v3StringSchema = { _def: { typeName: 'ZodString' } };
+      const v3OptionalNumberSchema = {
+        _def: { typeName: 'ZodOptional', innerType: { _def: { typeName: 'ZodNumber' } } },
+      };
+      const v3EnumSchema = { _def: { typeName: 'ZodEnum', values: ['admin', 'user'] } };
+      const v3ArraySchema = { _def: { typeName: 'ZodArray', type: v3StringSchema } };
+      const v3ObjectSchema = {
+        _def: {
+          typeName: 'ZodObject',
+          shape: () => ({
+            name: v3StringSchema,
+            role: v3EnumSchema,
+            age: v3OptionalNumberSchema,
+            skills: v3ArraySchema,
+          }),
+        },
+      };
+
+      const jsonSchema = zodV3ToJsonSchema(v3ObjectSchema);
+      expect(jsonSchema['type']).toBe('object');
+      const properties = jsonSchema['properties'] as Record<string, Record<string, unknown>>;
+      expect(properties['name']?.['type']).toBe('string');
+      expect(properties['role']?.['enum']).toEqual(['admin', 'user']);
+      expect(properties['skills']?.['type']).toBe('array');
+      expect(jsonSchema['required']).toEqual(['name', 'role', 'skills']);
     });
 
     it('extracts and parses structured output from markdown code blocks', () => {
