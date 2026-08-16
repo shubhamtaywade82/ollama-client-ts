@@ -16,25 +16,23 @@ import { checkEndpointHealth, type EndpointHealthCheckResult } from './providers
 import {
   detectModelCapabilities,
   inferRuntimeMode,
-  listAvailableModels,
   type ModelCapabilities,
   type RuntimeMode,
 } from './capabilities/capabilities.js';
 import { parseStructuredOutput, zodToJsonSchema } from './schema/zod.js';
-import {
-  normalizeChatStream,
-  normalizeGenerateStream,
-  normalizeProgressStream,
-} from './streaming/normalize.js';
+import { normalizeChatStream, normalizeGenerateStream } from './streaming/normalize.js';
 import { OllamaStream } from './streaming/stream.js';
 import type {
   ChatStreamResult,
   GenerateStreamResult,
   ProgressStreamResult,
 } from './streaming/types.js';
-import { HttpClient, type FetchLike } from './transport/http.js';
+import { HttpClient, type BinaryBody, type FetchLike } from './transport/http.js';
 import { DEFAULT_RETRY_CONFIG, withRetry, type RetryConfig } from './transport/retry.js';
 import { createTimeoutSignal } from './transport/timeout.js';
+import { ModelsClient } from './models-client.js';
+import { OpenAICompatClient } from './integrations/openai.js';
+import { AnthropicCompatClient } from './integrations/anthropic.js';
 import type {
   ChatRequestOptions,
   ChatResponse,
@@ -63,7 +61,8 @@ import type {
 } from './types.js';
 
 export class OllamaClient {
-  private readonly registry: EndpointRegistry;
+  readonly registry: EndpointRegistry;
+  readonly modelsClient: ModelsClient;
   private readonly retryConfig: RetryConfig;
   private readonly timeoutMs: number;
   private readonly failoverCodes: Set<string>;
@@ -84,15 +83,14 @@ export class OllamaClient {
     this.failoverCodes = new Set(config.failoverOn ?? DEFAULT_FAILOVER_CODES);
     this.fetchImpl = config.fetch ?? globalThis.fetch;
     this.logger = config.logger ?? (config.debug ? createConsoleLogger() : NOOP_LOGGER);
-
-    const retries =
+    this.retryConfig =
       typeof config.retries === 'number'
         ? { ...DEFAULT_RETRY_CONFIG, maxRetries: config.retries }
         : { ...DEFAULT_RETRY_CONFIG, ...config.retries };
-    this.retryConfig = retries;
+    this.modelsClient = new ModelsClient((op, opts) => this.executeWithFailover(op, opts));
   }
 
-  private async executeWithFailover<T>(
+  async executeWithFailover<T>(
     operation: (http: HttpClient, signal: AbortSignal) => Promise<T>,
     options?: { signal?: AbortSignal | undefined; timeoutMs?: number | undefined },
   ): Promise<T> {
@@ -102,9 +100,7 @@ export class OllamaClient {
       let lastError: Error | undefined;
 
       for (const endpoint of candidates) {
-        this.logger.debug(
-          `Executing request against endpoint "${endpoint.name}" (${endpoint.baseUrl})`,
-        );
+        this.logger.debug(`Executing on endpoint "${endpoint.name}" (${endpoint.baseUrl})`);
         const http = new HttpClient({
           baseUrl: endpoint.baseUrl,
           ...(endpoint.apiKey !== undefined ? { apiKey: endpoint.apiKey } : {}),
@@ -120,10 +116,9 @@ export class OllamaClient {
           const error = err instanceof Error ? err : new Error(String(err));
           lastError = error;
           this.registry.reportFailure(endpoint.name);
-          this.logger.warn(`Request failed on endpoint "${endpoint.name}": ${error.message}`);
-          const isFailover =
-            error instanceof OllamaClientError && this.failoverCodes.has(error.code);
-          if (!isFailover) throw error;
+          this.logger.warn(`Failed on "${endpoint.name}": ${error.message}`);
+          if (!(error instanceof OllamaClientError && this.failoverCodes.has(error.code)))
+            throw error;
         }
       }
       throw lastError ?? new Error('No healthy Ollama endpoints available');
@@ -136,7 +131,10 @@ export class OllamaClient {
   chat(
     request: ChatRequestOptions & { stream: true },
   ): Promise<OllamaStream<ChatResponse, ChatStreamResult>>;
-  chat(request: ChatRequestOptions & { stream?: false }): Promise<ChatResponse>;
+  chat(request: ChatRequestOptions & { stream?: false | undefined }): Promise<ChatResponse>;
+  chat(
+    request: ChatRequestOptions,
+  ): Promise<ChatResponse | OllamaStream<ChatResponse, ChatStreamResult>>;
   async chat(
     request: ChatRequestOptions,
   ): Promise<ChatResponse | OllamaStream<ChatResponse, ChatStreamResult>> {
@@ -185,7 +183,12 @@ export class OllamaClient {
   generate(
     request: GenerateRequestOptions & { stream: true },
   ): Promise<OllamaStream<GenerateResponse, GenerateStreamResult>>;
-  generate(request: GenerateRequestOptions & { stream?: false }): Promise<GenerateResponse>;
+  generate(
+    request: GenerateRequestOptions & { stream?: false | undefined },
+  ): Promise<GenerateResponse>;
+  generate(
+    request: GenerateRequestOptions,
+  ): Promise<GenerateResponse | OllamaStream<GenerateResponse, GenerateStreamResult>>;
   async generate(
     request: GenerateRequestOptions,
   ): Promise<GenerateResponse | OllamaStream<GenerateResponse, GenerateStreamResult>> {
@@ -254,136 +257,66 @@ export class OllamaClient {
     );
   }
 
-  // --- Model Ops ---
+  // --- Model Operations (Delegated to ModelsClient) ---
   listModels(): Promise<ModelResponse[]> {
-    return this.executeWithFailover((http) => listAvailableModels(http));
+    return this.modelsClient.list();
   }
-
   models(): Promise<ModelResponse[]> {
-    return this.listModels();
+    return this.modelsClient.list();
   }
-
   showModel(request: ShowRequestOptions): Promise<ShowResponse> {
-    return this.executeWithFailover(
-      (http, signal) => http.request<ShowResponse>({ path: '/api/show', body: request, signal }),
-      request,
-    );
+    return this.modelsClient.show(request);
   }
-
   pullModel(
     request: PullRequestOptions & { stream: true },
   ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
-  pullModel(request: PullRequestOptions & { stream?: false }): Promise<ProgressResponse>;
-  async pullModel(
+  pullModel(
+    request: PullRequestOptions & { stream?: false | undefined },
+  ): Promise<ProgressResponse>;
+  pullModel(
     request: PullRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    if (request.stream) {
-      return this.executeWithFailover(async (http, signal) => {
-        const stream = await http.requestStream<ProgressResponse>({
-          path: '/api/pull',
-          body: { ...request, stream: true },
-          signal,
-        });
-        return normalizeProgressStream(stream);
-      }, request);
-    }
-    return this.executeWithFailover(
-      (http, signal) =>
-        http.request<ProgressResponse>({
-          path: '/api/pull',
-          body: { ...request, stream: false },
-          signal,
-        }),
-      request,
-    );
+    return this.modelsClient.pull(request);
   }
-
   pushModel(
     request: PushRequestOptions & { stream: true },
   ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
-  pushModel(request: PushRequestOptions & { stream?: false }): Promise<ProgressResponse>;
-  async pushModel(
+  pushModel(
+    request: PushRequestOptions & { stream?: false | undefined },
+  ): Promise<ProgressResponse>;
+  pushModel(
     request: PushRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    if (request.stream) {
-      return this.executeWithFailover(async (http, signal) => {
-        const stream = await http.requestStream<ProgressResponse>({
-          path: '/api/push',
-          body: { ...request, stream: true },
-          signal,
-        });
-        return normalizeProgressStream(stream);
-      }, request);
-    }
-    return this.executeWithFailover(
-      (http, signal) =>
-        http.request<ProgressResponse>({
-          path: '/api/push',
-          body: { ...request, stream: false },
-          signal,
-        }),
-      request,
-    );
+    return this.modelsClient.push(request);
   }
-
   createModel(
     request: CreateRequestOptions & { stream: true },
   ): Promise<OllamaStream<ProgressResponse, ProgressStreamResult>>;
-  createModel(request: CreateRequestOptions & { stream?: false }): Promise<ProgressResponse>;
-  async createModel(
+  createModel(
+    request: CreateRequestOptions & { stream?: false | undefined },
+  ): Promise<ProgressResponse>;
+  createModel(
     request: CreateRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
-    if (request.stream) {
-      return this.executeWithFailover(async (http, signal) => {
-        const stream = await http.requestStream<ProgressResponse>({
-          path: '/api/create',
-          body: { ...request, stream: true },
-          signal,
-        });
-        return normalizeProgressStream(stream);
-      }, request);
-    }
-    return this.executeWithFailover(
-      (http, signal) =>
-        http.request<ProgressResponse>({
-          path: '/api/create',
-          body: { ...request, stream: false },
-          signal,
-        }),
-      request,
-    );
+    return this.modelsClient.create(request);
   }
-
   deleteModel(request: DeleteRequestOptions): Promise<StatusResponse> {
-    return this.executeWithFailover(
-      (http, signal) =>
-        http.request<StatusResponse>({
-          path: '/api/delete',
-          method: 'DELETE',
-          body: request,
-          signal,
-        }),
-      request,
-    );
+    return this.modelsClient.delete(request);
   }
-
   copyModel(request: CopyRequestOptions): Promise<StatusResponse> {
-    return this.executeWithFailover(
-      (http, signal) => http.request<StatusResponse>({ path: '/api/copy', body: request, signal }),
-      request,
-    );
+    return this.modelsClient.copy(request);
   }
-
   ps(): Promise<PsResponse> {
-    return this.executeWithFailover((http) =>
-      http.request<PsResponse>({ path: '/api/ps', method: 'GET' }),
-    );
+    return this.modelsClient.ps();
   }
-
   version(): Promise<VersionResponse> {
-    return this.executeWithFailover((http) =>
-      http.request<VersionResponse>({ path: '/api/version', method: 'GET' }),
-    );
+    return this.modelsClient.version();
+  }
+  createBlob(digest: string, data: BinaryBody): Promise<void> {
+    return this.modelsClient.createBlob(digest, data);
+  }
+  checkBlob(digest: string): Promise<boolean> {
+    return this.modelsClient.checkBlob(digest);
   }
 
   // --- Web Endpoints ---
@@ -394,7 +327,6 @@ export class OllamaClient {
       request,
     );
   }
-
   webFetch(request: WebFetchRequestOptions): Promise<WebFetchResponse> {
     return this.executeWithFailover(
       (http, signal) =>
@@ -403,21 +335,42 @@ export class OllamaClient {
     );
   }
 
-  // --- Cap & Health ---
+  // --- Capabilities & Health ---
   capabilities(model: string): Promise<ModelCapabilities> {
     return this.executeWithFailover((http) => detectModelCapabilities(http, model));
   }
-
   runtimeMode(): RuntimeMode {
     const ep = this.registry.candidates()[0];
     return inferRuntimeMode(ep?.baseUrl ?? DEFAULT_BASE_URL);
   }
-
   healthCheck(): Promise<EndpointHealthCheckResult[]> {
     return Promise.all(this.registry.list().map((ep) => checkEndpointHealth(ep, this.fetchImpl)));
   }
-
   endpointStatus(): EndpointHealth[] {
     return this.registry.status();
+  }
+
+  // --- OpenAI & Anthropic Compatibility Adapters ---
+  get openai(): OpenAICompatClient {
+    const ep = this.registry.candidates()[0];
+    return new OpenAICompatClient(
+      new HttpClient({
+        baseUrl: ep?.baseUrl ?? DEFAULT_BASE_URL,
+        apiKey: ep?.apiKey,
+        headers: ep?.headers,
+        fetch: this.fetchImpl,
+      }),
+    );
+  }
+  get anthropic(): AnthropicCompatClient {
+    const ep = this.registry.candidates()[0];
+    return new AnthropicCompatClient(
+      new HttpClient({
+        baseUrl: ep?.baseUrl ?? DEFAULT_BASE_URL,
+        apiKey: ep?.apiKey,
+        headers: ep?.headers,
+        fetch: this.fetchImpl,
+      }),
+    );
   }
 }

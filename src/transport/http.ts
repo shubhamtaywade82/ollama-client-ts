@@ -7,6 +7,8 @@ import { parseNdjsonStream } from '../streaming/ndjson.js';
 import type { AbortableAsyncIterable } from '../streaming/types.js';
 
 export type FetchLike = typeof globalThis.fetch;
+export type BinaryBody = Uint8Array | ArrayBuffer | string | Blob | ReadableStream<Uint8Array>;
+export type HttpBody = unknown;
 
 export interface HttpClientOptions {
   readonly baseUrl: string;
@@ -17,8 +19,9 @@ export interface HttpClientOptions {
 
 export interface HttpRequestOptions {
   readonly path: string;
-  readonly method?: 'GET' | 'POST' | 'DELETE' | undefined;
-  readonly body?: unknown;
+  readonly method?: 'GET' | 'POST' | 'DELETE' | 'HEAD' | undefined;
+  readonly body?: HttpBody;
+  readonly rawBody?: BinaryBody | undefined;
   readonly headers?: Record<string, string> | undefined;
   readonly signal?: AbortSignal | undefined;
 }
@@ -50,14 +53,27 @@ export class HttpClient {
 
   async request<T>(options: HttpRequestOptions): Promise<T> {
     const url = `${this.baseUrl}${options.path}`;
-    const method = options.method ?? (options.body !== undefined ? 'POST' : 'GET');
+    const method =
+      options.method ??
+      (options.body !== undefined || options.rawBody !== undefined ? 'POST' : 'GET');
     const headers = this.buildHeaders(options.headers);
 
+    if (options.rawBody !== undefined && !options.headers?.['Content-Type']) {
+      delete headers['Content-Type'];
+    }
+
     try {
+      const bodyInit =
+        options.rawBody !== undefined
+          ? (options.rawBody as never)
+          : options.body !== undefined
+            ? JSON.stringify(options.body)
+            : undefined;
+
       const init: RequestInit = {
         method,
         headers,
-        ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+        ...(bodyInit !== undefined ? { body: bodyInit } : {}),
         ...(options.signal !== undefined ? { signal: options.signal } : {}),
       };
 
@@ -79,6 +95,10 @@ export class HttpClient {
           request: { method, url },
           response: { status: response.status, body: errorBody },
         });
+      }
+
+      if (options.method === 'HEAD' || response.status === 204) {
+        return undefined as T;
       }
 
       return (await response.json()) as T;

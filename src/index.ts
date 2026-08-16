@@ -4,6 +4,7 @@
 
 // Core client and config
 export { OllamaClient } from './client.js';
+export { ModelsClient, type RequestRunner } from './models-client.js';
 export {
   DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT_MS,
@@ -80,6 +81,7 @@ export {
   type HttpClientOptions,
   type HttpRequestOptions,
   type FetchLike,
+  type HttpBody,
 } from './transport/http.js';
 export { calculateBackoff, DEFAULT_BACKOFF, type BackoffOptions } from './transport/backoff.js';
 export { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from './transport/retry.js';
@@ -95,13 +97,16 @@ export {
   type ResponseContext,
 } from './middleware.js';
 
-// Streaming
+// Streaming & Web Standard Adapters
 export {
   OllamaStream,
   normalizeChatStream,
   normalizeGenerateStream,
   normalizeProgressStream,
   parseNdjsonStream,
+  toTextStream,
+  toDataStream,
+  toResponse,
 } from './streaming/index.js';
 export type {
   OllamaStreamEvent,
@@ -155,6 +160,22 @@ export {
   type McpContentBlock,
   type McpCallToolResult,
 } from './mcp/index.js';
+
+// Integrations (OpenAI & Anthropic compatibility)
+export {
+  OpenAICompatClient,
+  AnthropicCompatClient,
+  type OpenAIMessage,
+  type OpenAIChatCompletionRequest,
+  type OpenAIChatCompletionChoice,
+  type OpenAIChatCompletionResponse,
+  type OpenAIModelItem,
+  type OpenAIListModelsResponse,
+  type AnthropicContentBlock,
+  type AnthropicMessage,
+  type AnthropicMessagesRequest,
+  type AnthropicMessagesResponse,
+} from './integrations/index.js';
 
 // Skills (core prompt functions)
 export {
