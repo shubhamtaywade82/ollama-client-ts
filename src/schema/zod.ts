@@ -25,7 +25,73 @@ function extractJsonSubstring(text: string): string {
 }
 
 /**
+ * Best-effort structural JSON Schema conversion for Zod v3 schemas, which lack a
+ * native `toJSONSchema` API. Walks the internal `_def` shape that v3 exposes.
+ */
+export function zodV3ToJsonSchema(schema: unknown): Record<string, unknown> {
+  const def = (schema as { _def?: { typeName?: string; [key: string]: unknown } })._def;
+  if (!def) {
+    return { type: 'object' };
+  }
+
+  switch (def['typeName']) {
+    case 'ZodObject': {
+      const shape = (def['shape'] as () => Record<string, unknown>)();
+      const properties: Record<string, unknown> = {};
+      const required: string[] = [];
+      for (const [key, value] of Object.entries(shape)) {
+        properties[key] = zodV3ToJsonSchema(value);
+        if (!isZodV3Optional(value)) {
+          required.push(key);
+        }
+      }
+      return {
+        type: 'object',
+        properties,
+        ...(required.length > 0 ? { required } : {}),
+      };
+    }
+    case 'ZodString':
+      return { type: 'string' };
+    case 'ZodNumber':
+      return { type: 'number' };
+    case 'ZodBoolean':
+      return { type: 'boolean' };
+    case 'ZodDate':
+      return { type: 'string', format: 'date-time' };
+    case 'ZodArray':
+      return { type: 'array', items: zodV3ToJsonSchema(def['type']) };
+    case 'ZodEnum':
+      return { type: 'string', enum: def['values'] };
+    case 'ZodNativeEnum':
+      return { enum: Object.values(def['values'] as Record<string, unknown>) };
+    case 'ZodLiteral':
+      return { const: def['value'] };
+    case 'ZodOptional':
+    case 'ZodNullable':
+    case 'ZodDefault':
+      return zodV3ToJsonSchema(def['innerType']);
+    case 'ZodEffects':
+      return zodV3ToJsonSchema(def['schema']);
+    case 'ZodUnion':
+      return { anyOf: (def['options'] as unknown[]).map((option) => zodV3ToJsonSchema(option)) };
+    case 'ZodRecord':
+      return { type: 'object', additionalProperties: zodV3ToJsonSchema(def['valueType']) };
+    default:
+      return { type: 'object' };
+  }
+}
+
+function isZodV3Optional(schema: unknown): boolean {
+  const typeName = (schema as { _def?: { typeName?: string } })._def?.typeName;
+  return typeName === 'ZodOptional' || typeName === 'ZodDefault';
+}
+
+/**
  * Converts a Zod schema into a JSON Schema object accepted by Ollama's `format` parameter.
+ *
+ * Uses Zod v4's native `z.toJSONSchema` when available, falling back to a structural
+ * walk of Zod v3's internal `_def` shape so both major versions work as peer dependencies.
  */
 export function zodToJsonSchema<T>(schema: z.ZodType<T>): Record<string, unknown> {
   if (
@@ -37,15 +103,7 @@ export function zodToJsonSchema<T>(schema: z.ZodType<T>): Record<string, unknown
     ).toJSONSchema(schema);
   }
 
-  try {
-    return (
-      (schema as unknown as { jsonSchema?: Record<string, unknown> }).jsonSchema ?? {
-        type: 'object',
-      }
-    );
-  } catch {
-    return { type: 'object' };
-  }
+  return zodV3ToJsonSchema(schema);
 }
 
 /**

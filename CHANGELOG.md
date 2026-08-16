@@ -17,8 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `createModel`, `pullModel`, `pushModel`, `copyModel`, `deleteModel`, `listModels`, `showModel`.
   - Dedicated blob management endpoints: `createBlob` (`POST /api/blobs/:digest`) and `checkBlob` (`HEAD /api/blobs/:digest`).
 - **Structured Outputs & Schema Validation:**
-  - Seamless Zod schema conversion to JSON Schema.
+  - Seamless Zod schema conversion to JSON Schema, supporting both Zod v4 (native `z.toJSONSchema`) and Zod v3 (structural fallback).
   - Structured output parsing with resilient markdown code fence JSON extraction and strict validation errors (`OllamaToolValidationError`).
+  - `zod` is a peer dependency (`^3.22.0 || ^4.0.0`) rather than a bundled dependency, so consumers don't end up with a duplicate copy in `node_modules`.
 - **Reasoning & Thinking Tokens:**
   - Native parsing of reasoning traces (`<think>` tags and `message.thinking`) with dual stream events (`thinking` vs `token`).
 - **Agentic Workflow & Tool Calling:**

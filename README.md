@@ -28,6 +28,8 @@
 npm install @shubhamtaywade82/ollama-client-ts zod
 ```
 
+`zod` is a peer dependency (`^3.22.0 || ^4.0.0`) — install whichever major version your project already uses instead of getting a second copy bundled in.
+
 ---
 
 ## Quick Start
@@ -180,6 +182,54 @@ const client = new OllamaClient({
 const health = await client.healthCheck();
 console.log(health);
 ```
+
+---
+
+## Error Handling
+
+Every failure thrown by the client is an `OllamaClientError` subclass, so you can catch the base
+class or narrow to a specific `code`:
+
+| Class | `code` | `retryable` | Thrown when |
+| --- | --- | --- | --- |
+| `OllamaNetworkError` | `network_error` | `true` | The request failed before a response was received (DNS, connection refused, etc). |
+| `OllamaTimeoutError` | `timeout` | `true` | The request exceeded `timeoutMs`. |
+| `OllamaAuthError` | `auth_error` | `false` | The endpoint returned `401`/`403`. |
+| `OllamaNotFoundError` | `not_found` | `false` | The endpoint returned `404` (e.g. unknown model). |
+| `OllamaRateLimitError` | `rate_limited` | `true` | The endpoint returned `429`. |
+| `OllamaServerError` | `server_error` | `true` | The endpoint returned `5xx`. |
+| `OllamaAbortError` | `aborted` | `false` | The request was cancelled via `AbortSignal`. |
+| `OllamaToolValidationError` | `tool_validation_error` | `false` | A tool call's arguments, or a `chatWithSchema`/`generateWithSchema` result, failed Zod validation. |
+| `OllamaAgentMaxIterationsError` | `agent_max_iterations_exceeded` | `false` | An `Agent` run exceeded `maxTurns` without producing a final answer. |
+| `OllamaMcpError` | `mcp_error` | varies | An MCP `listTools`/`callTool` call failed. |
+| `OllamaSkillNotFoundError` | `skill_not_found` | `false` | `applySkill` referenced a skill that isn't registered. |
+| `OllamaSkillInvalidError` | `skill_invalid` | `false` | A skill's frontmatter or contents failed to parse. |
+| `OllamaGenericClientError` | `client_error` | `false` | Any other non-2xx response not covered above. |
+
+All subclasses carry `status`, `retryable`, and optional `request`/`response` context, and preserve
+the original error via the standard `cause` property:
+
+```typescript
+import { OllamaClientError, OllamaRateLimitError } from '@shubhamtaywade82/ollama-client-ts';
+
+try {
+  await client.chatText({ model: 'qwen3.5:2b', messages: [...] });
+} catch (err) {
+  if (err instanceof OllamaRateLimitError) {
+    console.warn(`Rate limited, retry after ${err.retryAfterMs}ms`);
+  } else if (err instanceof OllamaClientError) {
+    console.error(`[${err.code}] ${err.message}`, { retryable: err.retryable, cause: err.cause });
+  } else {
+    throw err;
+  }
+}
+```
+
+Multi-endpoint failover (`endpoints: [...]`) fails open rather than throwing a dedicated
+"circuit open" error: once an endpoint's failure count crosses `failureThreshold`, it's skipped in
+favor of healthy endpoints for `cooldownMs`, and only used again — sorted soonest-to-recover — if
+every endpoint is cooling down. Call `client.healthCheck()` or inspect the registry's `status()` to
+observe per-endpoint circuit state directly.
 
 ---
 
