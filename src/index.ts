@@ -1,0 +1,212 @@
+/**
+ * ollama-client-ts: A production-grade TypeScript SDK for Ollama.
+ */
+
+// Core client and config
+export { OllamaClient } from './client.js';
+export {
+  DEFAULT_BASE_URL,
+  DEFAULT_TIMEOUT_MS,
+  DEFAULT_FAILOVER_CODES,
+  type OllamaClientConfig,
+} from './config.js';
+
+// Protocol and message types
+export type {
+  Role,
+  ToolCallFunction,
+  ToolCall,
+  Message,
+  ToolProperty,
+  ToolFunctionDefinition,
+  ToolDefinition,
+  FormatOption,
+  ModelOptions,
+  RequestCancellationOptions,
+  ChatRequestOptions,
+  ChatResponse,
+  GenerateRequestOptions,
+  GenerateResponse,
+  EmbedRequestOptions,
+  EmbedResponse,
+  EmbeddingsRequestOptions,
+  EmbeddingsResponse,
+  ModelDetails,
+  ModelResponse,
+  ListResponse,
+  ShowRequestOptions,
+  ShowResponse,
+  ProgressResponse,
+  PullRequestOptions,
+  PushRequestOptions,
+  CreateRequestOptions,
+  DeleteRequestOptions,
+  CopyRequestOptions,
+  StatusResponse,
+  VersionResponse,
+  PsResponse,
+  WebSearchRequestOptions,
+  WebSearchResult,
+  WebSearchResponse,
+  WebFetchRequestOptions,
+  WebFetchResponse,
+} from './types.js';
+
+// Errors
+export {
+  OllamaClientError,
+  OllamaNetworkError,
+  OllamaTimeoutError,
+  OllamaAuthError,
+  OllamaNotFoundError,
+  OllamaRateLimitError,
+  OllamaServerError,
+  OllamaAbortError,
+  OllamaToolValidationError,
+  OllamaAgentMaxIterationsError,
+  OllamaMcpError,
+  OllamaSkillNotFoundError,
+  OllamaSkillInvalidError,
+  OllamaGenericClientError,
+  mapError,
+  type OllamaErrorRequestContext,
+  type OllamaErrorResponseContext,
+  type OllamaClientErrorOptions,
+} from './errors.js';
+
+// Transport and retry
+export { HttpClient, type HttpClientOptions, type HttpRequestOptions, type FetchLike } from './transport/http.js';
+export { calculateBackoff, DEFAULT_BACKOFF, type BackoffOptions } from './transport/backoff.js';
+export { withRetry, DEFAULT_RETRY_CONFIG, type RetryConfig } from './transport/retry.js';
+export { createTimeoutSignal, type TimeoutSignal } from './transport/timeout.js';
+
+// Middleware
+export {
+  composeMiddleware,
+  type Middleware,
+  type MiddlewareContext,
+  type NextFunction,
+  type RequestContext,
+  type ResponseContext,
+} from './middleware.js';
+
+// Streaming
+export {
+  OllamaStream,
+  normalizeChatStream,
+  normalizeGenerateStream,
+  normalizeProgressStream,
+  parseNdjsonStream,
+} from './streaming/index.js';
+export type {
+  OllamaStreamEvent,
+  OllamaStreamEventType,
+  TokenEvent,
+  ThinkingEvent,
+  ToolCallEvent,
+  MessageEvent,
+  DoneEvent,
+  ErrorEvent,
+  ChatStreamResult,
+  GenerateStreamResult,
+  ProgressStreamResult,
+  AbortableAsyncIterable,
+} from './streaming/index.js';
+
+// Usage
+export {
+  extractUsage,
+  NANOS_PER_MS,
+  NANOS_PER_SECOND,
+  type TokenUsage,
+  type RawUsageSource,
+} from './usage.js';
+
+// Schema and Structured Outputs
+export {
+  zodToJsonSchema,
+  parseStructuredOutput,
+  type SupportedSchema,
+} from './schema/zod.js';
+
+// Tools
+export {
+  defineTool,
+  ToolRegistry,
+  type Tool,
+  type ToolHandler,
+  type ToolExecutionContext,
+  type ToolExecutionResult,
+  type ToolExecutionSuccess,
+  type ToolExecutionFailure,
+  type DefineToolOptions,
+  type ToolRegistryOptions,
+} from './tools/index.js';
+
+// MCP
+export {
+  loadMcpTools,
+  registerMcpTools,
+  type LoadMcpToolsOptions,
+  type McpClientLike,
+  type McpToolDescriptor,
+  type McpListToolsResult,
+  type McpContentBlock,
+  type McpCallToolResult,
+} from './mcp/index.js';
+
+// Skills (core prompt functions)
+export {
+  parseFrontmatter,
+  applySkill,
+  type Skill,
+  type SkillSummary,
+  type SkillFrontmatter,
+  type ParsedFrontmatter,
+  type ApplySkillOptions,
+  type AppliedSkillResult,
+} from './skills/index.js';
+
+// Agent
+export {
+  Agent,
+  type AgentConfig,
+  type AgentHooks,
+  type AgentResult,
+  type AgentRunInput,
+  type AgentTurn,
+  type AgentChatClient,
+} from './agent/index.js';
+
+// Providers and capabilities
+export {
+  EndpointRegistry,
+  type OllamaEndpoint,
+  type EndpointHealth,
+  type EndpointRegistryOptions,
+} from './providers/endpoint-registry.js';
+export {
+  checkEndpointHealth,
+  type EndpointHealthCheckResult,
+} from './providers/health-check.js';
+export {
+  detectModelCapabilities,
+  inferRuntimeMode,
+  listAvailableModels,
+  type ModelCapabilities,
+  type RuntimeMode,
+} from './capabilities/capabilities.js';
+
+// Logger
+export {
+  createConsoleLogger,
+  NOOP_LOGGER,
+  type Logger,
+  type LogFn,
+  type RequestLifecycleEvent,
+  type RequestLifecycleHook,
+  type LifecycleStartEvent,
+  type LifecycleSuccessEvent,
+  type LifecycleRetryEvent,
+  type LifecycleErrorEvent,
+} from './logger.js';

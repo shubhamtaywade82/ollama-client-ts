@@ -1,0 +1,285 @@
+/**
+ * Core protocol and message types for the Ollama REST API.
+ */
+
+export type Role = 'system' | 'user' | 'assistant' | 'tool' | 'thought';
+
+export interface ToolCallFunction {
+  readonly name: string;
+  readonly arguments: Record<string, unknown>;
+}
+
+export interface ToolCall {
+  readonly function: ToolCallFunction;
+}
+
+export interface Message {
+  readonly role: Role;
+  readonly content: string;
+  readonly images?: readonly string[] | undefined;
+  readonly tool_calls?: readonly ToolCall[] | undefined;
+  readonly thinking?: string | undefined;
+}
+
+export interface ToolProperty {
+  readonly type: string;
+  readonly description?: string | undefined;
+  readonly enum?: readonly string[] | undefined;
+  readonly items?: Record<string, unknown> | undefined;
+  readonly properties?: Record<string, unknown> | undefined;
+  readonly required?: readonly string[] | undefined;
+}
+
+export interface ToolFunctionDefinition {
+  readonly name: string;
+  readonly description: string;
+  readonly parameters: {
+    readonly type: 'object';
+    readonly properties: Record<string, ToolProperty>;
+    readonly required?: readonly string[] | undefined;
+  };
+}
+
+export interface ToolDefinition {
+  readonly type: 'function';
+  readonly function: ToolFunctionDefinition;
+}
+
+export type FormatOption = 'json' | Record<string, unknown>;
+
+export interface ModelOptions {
+  readonly num_keep?: number | undefined;
+  readonly seed?: number | undefined;
+  readonly num_predict?: number | undefined;
+  readonly top_k?: number | undefined;
+  readonly top_p?: number | undefined;
+  readonly min_p?: number | undefined;
+  readonly tfs_z?: number | undefined;
+  readonly typical_p?: number | undefined;
+  readonly repeat_last_n?: number | undefined;
+  readonly temperature?: number | undefined;
+  readonly repeat_penalty?: number | undefined;
+  readonly presence_penalty?: number | undefined;
+  readonly frequency_penalty?: number | undefined;
+  readonly mirostat?: number | undefined;
+  readonly mirostat_tau?: number | undefined;
+  readonly mirostat_eta?: number | undefined;
+  readonly penalize_newline?: boolean | undefined;
+  readonly stop?: readonly string[] | undefined;
+  readonly num_ctx?: number | undefined;
+  readonly num_batch?: number | undefined;
+  readonly num_gpu?: number | undefined;
+  readonly main_gpu?: number | undefined;
+  readonly low_vram?: boolean | undefined;
+  readonly f16_kv?: boolean | undefined;
+  readonly vocab_only?: boolean | undefined;
+  readonly use_mmap?: boolean | undefined;
+  readonly use_mlock?: boolean | undefined;
+  readonly num_thread?: number | undefined;
+}
+
+export interface RequestCancellationOptions {
+  readonly signal?: AbortSignal | undefined;
+  readonly timeoutMs?: number | undefined;
+}
+
+export interface ChatRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly messages: readonly Message[];
+  readonly tools?: readonly ToolDefinition[] | undefined;
+  readonly format?: FormatOption | undefined;
+  readonly options?: ModelOptions | undefined;
+  readonly stream?: boolean | undefined;
+  readonly keep_alive?: string | number | undefined;
+  readonly think?: boolean | 'low' | 'medium' | 'high' | 'max' | undefined;
+}
+
+export interface ChatResponse {
+  readonly model: string;
+  readonly created_at: string;
+  readonly message: Message;
+  readonly done: boolean;
+  readonly done_reason?: string | undefined;
+  readonly total_duration?: number | undefined;
+  readonly load_duration?: number | undefined;
+  readonly prompt_eval_count?: number | undefined;
+  readonly prompt_eval_duration?: number | undefined;
+  readonly eval_count?: number | undefined;
+  readonly eval_duration?: number | undefined;
+}
+
+export interface GenerateRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly prompt: string;
+  readonly suffix?: string | undefined;
+  readonly system?: string | undefined;
+  readonly template?: string | undefined;
+  readonly context?: readonly number[] | undefined;
+  readonly stream?: boolean | undefined;
+  readonly raw?: boolean | undefined;
+  readonly format?: FormatOption | undefined;
+  readonly images?: readonly string[] | undefined;
+  readonly options?: ModelOptions | undefined;
+  readonly keep_alive?: string | number | undefined;
+  readonly think?: boolean | 'low' | 'medium' | 'high' | 'max' | undefined;
+}
+
+export interface GenerateResponse {
+  readonly model: string;
+  readonly created_at: string;
+  readonly response: string;
+  readonly done: boolean;
+  readonly done_reason?: string | undefined;
+  readonly context?: readonly number[] | undefined;
+  readonly total_duration?: number | undefined;
+  readonly load_duration?: number | undefined;
+  readonly prompt_eval_count?: number | undefined;
+  readonly prompt_eval_duration?: number | undefined;
+  readonly eval_count?: number | undefined;
+  readonly eval_duration?: number | undefined;
+  readonly thinking?: string | undefined;
+}
+
+export interface EmbedRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly input: string | readonly string[];
+  readonly truncate?: boolean | undefined;
+  readonly options?: ModelOptions | undefined;
+  readonly keep_alive?: string | number | undefined;
+}
+
+export interface EmbedResponse {
+  readonly model: string;
+  readonly embeddings: readonly (readonly number[])[];
+  readonly total_duration?: number | undefined;
+  readonly load_duration?: number | undefined;
+  readonly prompt_eval_count?: number | undefined;
+}
+
+export interface EmbeddingsRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly prompt: string;
+  readonly options?: ModelOptions | undefined;
+  readonly keep_alive?: string | number | undefined;
+}
+
+export interface EmbeddingsResponse {
+  readonly embedding: readonly number[];
+}
+
+export interface ModelDetails {
+  readonly parent_model?: string | undefined;
+  readonly format: string;
+  readonly family: string;
+  readonly families?: readonly string[] | undefined;
+  readonly parameter_size: string;
+  readonly quantization_level: string;
+}
+
+export interface ModelResponse {
+  readonly name: string;
+  readonly model: string;
+  readonly modified_at: string;
+  readonly size: number;
+  readonly digest: string;
+  readonly details: ModelDetails;
+  readonly expires_at?: string | undefined;
+  readonly size_vram?: number | undefined;
+}
+
+export interface ListResponse {
+  readonly models: readonly ModelResponse[];
+}
+
+export interface ShowRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly system?: string | undefined;
+  readonly template?: string | undefined;
+  readonly verbose?: boolean | undefined;
+}
+
+export interface ShowResponse {
+  readonly license?: string | undefined;
+  readonly modelfile?: string | undefined;
+  readonly parameters?: string | undefined;
+  readonly template?: string | undefined;
+  readonly system?: string | undefined;
+  readonly details: ModelDetails;
+  readonly messages?: readonly Message[] | undefined;
+  readonly model_info?: Record<string, unknown> | undefined;
+  readonly capabilities?: readonly string[] | undefined;
+  readonly modified_at?: string | undefined;
+}
+
+export interface ProgressResponse {
+  readonly status: string;
+  readonly digest?: string | undefined;
+  readonly total?: number | undefined;
+  readonly completed?: number | undefined;
+}
+
+export interface PullRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly insecure?: boolean | undefined;
+  readonly stream?: boolean | undefined;
+}
+
+export interface PushRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly insecure?: boolean | undefined;
+  readonly stream?: boolean | undefined;
+}
+
+export interface CreateRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+  readonly modelfile?: string | undefined;
+  readonly stream?: boolean | undefined;
+  readonly quantize?: string | undefined;
+  readonly from?: string | undefined;
+  readonly files?: Record<string, string> | undefined;
+  readonly adapters?: Record<string, string> | undefined;
+}
+
+export interface DeleteRequestOptions extends RequestCancellationOptions {
+  readonly model: string;
+}
+
+export interface CopyRequestOptions extends RequestCancellationOptions {
+  readonly source: string;
+  readonly destination: string;
+}
+
+export interface StatusResponse {
+  readonly status: string;
+}
+
+export interface VersionResponse {
+  readonly version: string;
+}
+
+export interface PsResponse {
+  readonly models: readonly ModelResponse[];
+}
+
+export interface WebSearchRequestOptions extends RequestCancellationOptions {
+  readonly query: string;
+  readonly count?: number | undefined;
+}
+
+export interface WebSearchResult {
+  readonly title: string;
+  readonly url: string;
+  readonly snippet: string;
+}
+
+export interface WebSearchResponse {
+  readonly results: readonly WebSearchResult[];
+}
+
+export interface WebFetchRequestOptions extends RequestCancellationOptions {
+  readonly url: string;
+}
+
+export interface WebFetchResponse {
+  readonly content: string;
+}
