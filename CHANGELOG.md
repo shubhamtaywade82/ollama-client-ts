@@ -34,13 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Edge Runtime CI Verification:** `npm run verify:edge-runtime` bundles `dist/index.js` for a browser/edge platform with `esbuild` (failing on any `node:*` import, matching Cloudflare Workers/Vercel Edge Runtime's own bundlers) and runs a full `OllamaClient` + `Agent` + tool-calling round trip inside `@edge-runtime/vm`'s sandboxed Edge Runtime — a real V8 context exposing only Web Standard globals. Wired into CI as its own job and into `verify`/`prepublishOnly`. See [ADR 0006](./docs/adr/0006-edge-runtime-ci-and-benchmarks.md).
 - **Benchmarks:** `npm run bench` (via `vitest bench`, no new dependency) covers NDJSON stream parsing, Zod schema conversion/structured output parsing, `ToolRegistry` dispatch overhead, and `OllamaClient.chat`'s end-to-end request pipeline overhead. Wired into CI as its own job.
 - **Protocol Compatibility Bridges:**
-  - OpenAI compatibility bridge (`/v1/chat/completions`, `/v1/models`).
-  - Anthropic compatibility bridge (`/v1/messages`).
+  - OpenAI compatibility bridge (`/v1/chat/completions`, `/v1/models`), including `stream_options.include_usage` typing for streamed token accounting.
+  - Anthropic compatibility bridge (`/v1/messages`), including `cache_control` typing on content blocks for prompt caching.
+- **Environment Variable Fallbacks:** `OllamaClient`'s default single-endpoint `baseUrl`/`apiKey` fall back to `OLLAMA_HOST`/`OLLAMA_API_KEY` (the same variables the official `ollama` CLI and client libraries read) when not passed explicitly, matching the convention of other major LLM SDKs. Guarded to remain a no-op (not a `ReferenceError`) on Edge runtimes where `process` doesn't exist. Explicit `config.baseUrl`/`config.apiKey`, and any use of `config.endpoints`, always take precedence.
 - **Web Standard Stream Adapters:**
   - `toTextStream`, `toDataStream`, and `toResponse` for direct integration with Next.js, Vercel AI SDK, and Web standard streams.
 - **Skills System:**
   - Frontmatter parser for `SKILL.md` documents.
   - Skill composition and prompt injection into system messages (`applySkill`).
+- **Documentation Hygiene:** `OllamaClient.embeddings()` is now marked `@deprecated` (Ollama's `/api/embeddings` was superseded by `/api/embed`, exposed as `embed()`). `ToolCall`, `Agent`, and `ToolRegistry.executeToolCalls` now document why tool execution is ordered/concurrency-bounded rather than ID-correlated: Ollama's native tool-calling protocol has no OpenAI-style `tool_call_id`.
 - **Testing & Quality Assurance:**
   - 4-tier test architecture: Unit, Integration, Functional, and Behavioral testing (50 tests).
   - VCR record and replay harness with real cassettes generated against `qwen3.5:2b` and `nomic-embed-text:latest`.

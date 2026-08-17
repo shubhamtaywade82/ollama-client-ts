@@ -7,6 +7,8 @@ import {
   DEFAULT_BASE_URL,
   DEFAULT_FAILOVER_CODES,
   DEFAULT_TIMEOUT_MS,
+  resolveApiKey,
+  resolveBaseUrl,
   type OllamaClientConfig,
 } from './config.js';
 import { OllamaClientError } from './errors.js';
@@ -72,11 +74,12 @@ export class OllamaClient {
   private readonly logger: Logger;
 
   constructor(config: OllamaClientConfig = {}) {
+    const resolvedApiKey = resolveApiKey(config.apiKey);
     const endpoints = config.endpoints ?? [
       {
         name: 'default',
-        baseUrl: config.baseUrl ?? DEFAULT_BASE_URL,
-        ...(config.apiKey !== undefined ? { apiKey: config.apiKey } : {}),
+        baseUrl: resolveBaseUrl(config.baseUrl),
+        ...(resolvedApiKey !== undefined ? { apiKey: resolvedApiKey } : {}),
         ...(config.headers !== undefined ? { headers: config.headers } : {}),
       },
     ];
@@ -298,6 +301,11 @@ export class OllamaClient {
     return res.embeddings;
   }
 
+  /**
+   * @deprecated Ollama's `/api/embeddings` endpoint has been superseded by `/api/embed`
+   * (exposed here as {@link OllamaClient.embed}), which additionally supports batch
+   * input. Kept for compatibility with existing callers; new code should use `embed`.
+   */
   embeddings(req: EmbeddingsRequestOptions): Promise<EmbeddingsResponse> {
     return this.executeWithFailover(
       (http, signal) =>

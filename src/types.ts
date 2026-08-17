@@ -9,6 +9,16 @@ export interface ToolCallFunction {
   readonly arguments: Record<string, unknown>;
 }
 
+/**
+ * Unlike OpenAI's `tool_calls[].id` / `tool_call_id`, Ollama's native API does not assign
+ * an identifier to a tool call — a model turn's `tool_calls` array has no per-call ID to
+ * correlate a result back to. `ToolRegistry.executeToolCalls` (see `src/tools/registry.ts`)
+ * therefore correlates results with calls purely by array position/order, not by ID, and
+ * `Agent` appends each result as a `role: 'tool'` message in that same order. This is why
+ * tool execution here is either straightforwardly parallel (`Promise.all`, the default) or
+ * concurrency-bounded (`ToolRegistry`'s `maxConcurrency` option) rather than modeled around
+ * per-call IDs the way an OpenAI-style integration would be.
+ */
 export interface ToolCall {
   readonly function: ToolCallFunction;
 }

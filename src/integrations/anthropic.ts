@@ -5,9 +5,15 @@
 
 import type { HttpClient } from '../transport/http.js';
 
+export interface AnthropicCacheControl {
+  readonly type: 'ephemeral';
+}
+
 export interface AnthropicContentBlock {
   readonly type: 'text';
   readonly text: string;
+  /** Marks this block as a prompt-caching breakpoint (Anthropic's ephemeral cache). */
+  readonly cache_control?: AnthropicCacheControl | undefined;
 }
 
 export interface AnthropicMessage {

@@ -28,6 +28,14 @@ export interface AgentChatClient {
   }): Promise<{ readonly message: Message }>;
 }
 
+/**
+ * Runs a multi-turn `chat` + tool-execution loop until the model responds without
+ * requesting further tool calls, or `maxIterations` is exceeded. Tool calls within a
+ * single turn are handed to `ToolRegistry.executeToolCalls` and their results are
+ * appended to history in the same order the model requested them — see the {@link
+ * ToolCall} type docs for why this is order-based rather than ID-based (Ollama's native
+ * tool-calling protocol has no OpenAI-style `tool_call_id`).
+ */
 export class Agent {
   private readonly client: AgentChatClient;
   private readonly tools?: ToolRegistry | undefined;

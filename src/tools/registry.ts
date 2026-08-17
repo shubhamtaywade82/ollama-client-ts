@@ -135,6 +135,12 @@ export class ToolRegistry {
     }
   }
 
+  /**
+   * Executes every call in `toolCalls` and returns results in the same order. Runs fully
+   * in parallel (`Promise.all`) unless `maxConcurrency` was configured, in which case a
+   * bounded worker pool is used instead. Results are correlated with their calls by array
+   * position, not by an ID — see the {@link ToolCall} docs for why.
+   */
   async executeToolCalls(
     toolCalls: readonly ToolCall[],
     ctx: ToolExecutionContext = {},
