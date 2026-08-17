@@ -154,6 +154,8 @@ export interface EmbedRequestOptions extends RequestCancellationOptions {
   readonly model: string;
   readonly input: string | readonly string[];
   readonly truncate?: boolean | undefined;
+  /** Truncates the returned embedding vectors to this many dimensions, if supported by the model. */
+  readonly dimensions?: number | undefined;
   readonly options?: ModelOptions | undefined;
   readonly keep_alive?: string | number | undefined;
 }

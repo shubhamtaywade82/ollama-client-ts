@@ -1,6 +1,13 @@
 /**
  * Anthropic Compatibility interfaces and client helpers for Ollama.
  * Ollama supports Anthropic Messages API format.
+ *
+ * @remarks
+ * This is a typed pass-through to Ollama's Anthropic-compatible `/v1/messages` endpoint
+ * — a subset of Anthropic's Messages API (text content, system prompt, sampling
+ * parameters, ephemeral prompt-caching hints via `cache_control`), not the full Anthropic
+ * surface. Tool use (`tool_use`/`tool_result` content blocks), extended thinking,
+ * citations, files, token counting, and the Batches API are not modeled here.
  */
 
 import type { HttpClient } from '../transport/http.js';

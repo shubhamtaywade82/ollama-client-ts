@@ -1,19 +1,53 @@
 /**
  * OpenAI Compatibility interfaces and client helpers for Ollama.
  * Ollama exposes OpenAI-compatible /v1 endpoints.
+ *
+ * @remarks
+ * This is a typed pass-through to Ollama's own OpenAI-compatible `/v1` endpoints — it
+ * implements the subset of the OpenAI Chat Completions API that Ollama documents as
+ * supported (https://docs.ollama.com/api/openai-compatibility), not the full OpenAI
+ * surface (Responses API, hosted tools like web/file search, computer use, code
+ * interpreter, or server-side conversation state). Notably, `tools` is supported by
+ * Ollama's compat layer but `tool_choice` and `parallel_tool_calls` are explicitly
+ * **not** — deliberately omitted from {@link OpenAIChatCompletionRequest} rather than
+ * typed as accepted-but-ignored.
  */
 
 import type { HttpClient } from '../transport/http.js';
+
+export interface OpenAIToolCall {
+  readonly id: string;
+  readonly type: 'function';
+  readonly function: {
+    readonly name: string;
+    /** JSON-encoded arguments string, matching OpenAI's wire format (not a parsed object). */
+    readonly arguments: string;
+  };
+}
 
 export interface OpenAIMessage {
   readonly role: 'system' | 'user' | 'assistant' | 'tool';
   readonly content: string;
   readonly name?: string | undefined;
+  readonly tool_calls?: readonly OpenAIToolCall[] | undefined;
+  /** Set on a `role: 'tool'` message to identify which call this is a result for. */
+  readonly tool_call_id?: string | undefined;
 }
 
 export interface OpenAIStreamOptions {
   /** Emit a final SSE chunk carrying `usage` (prompt/completion/total tokens) before `[DONE]`. */
   readonly include_usage?: boolean | undefined;
+}
+
+export interface OpenAIFunctionDefinition {
+  readonly name: string;
+  readonly description?: string | undefined;
+  readonly parameters?: Record<string, unknown> | undefined;
+}
+
+export interface OpenAITool {
+  readonly type: 'function';
+  readonly function: OpenAIFunctionDefinition;
 }
 
 export interface OpenAIChatCompletionRequest {
@@ -29,6 +63,7 @@ export interface OpenAIChatCompletionRequest {
   readonly presence_penalty?: number | undefined;
   readonly frequency_penalty?: number | undefined;
   readonly user?: string | undefined;
+  readonly tools?: readonly OpenAITool[] | undefined;
 }
 
 export interface OpenAIChatCompletionChoice {

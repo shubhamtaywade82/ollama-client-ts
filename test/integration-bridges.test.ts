@@ -55,6 +55,43 @@ describe('Compatibility bridge request typing (mocked network)', () => {
     expect(JSON.parse(init.body).stream_options).toEqual({ include_usage: true });
   });
 
+  it('forwards OpenAI tools (function definitions) in the request body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        id: 'x',
+        object: 'chat.completion',
+        created: 0,
+        model: 'llama3.2',
+        choices: [],
+      }),
+    });
+    const client = new OllamaClient({ fetch: fetchMock as never });
+
+    await client.openai.chatCompletions({
+      model: 'llama3.2',
+      messages: [{ role: 'user', content: 'What is the weather in Tokyo?' }],
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'get_weather',
+            description: 'Get the current weather for a city',
+            parameters: { type: 'object', properties: { city: { type: 'string' } } },
+          },
+        },
+      ],
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, { body: string }];
+    const body = JSON.parse(init.body);
+    expect(body.tools[0].function.name).toBe('get_weather');
+    // tool_choice / parallel_tool_calls are deliberately not part of the request type —
+    // Ollama's OpenAI-compat layer documents tool_choice as explicitly unsupported.
+    expect(body.tool_choice).toBeUndefined();
+  });
+
   it('forwards Anthropic cache_control on content blocks in the request body', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
