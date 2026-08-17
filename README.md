@@ -19,6 +19,7 @@
 - 🌉 **OpenAI & Anthropic Compatibility Bridges**: Built-in clients for `/v1/chat/completions`, `/v1/models`, and `/v1/messages`.
 - 🌊 **Web Stream Adapters**: Drop-in adapters (`toTextStream`, `toDataStream`, `toResponse`) for Next.js Route Handlers and Vercel AI SDK.
 - 📈 **OpenTelemetry Instrumentation**: Automatic spans for HTTP requests, endpoint failover, chat/generate calls, and agent runs — zero-cost when OpenTelemetry isn't installed.
+- ⚡ **Edge Runtime Verified**: CI bundles and runs the client in a real Edge Runtime sandbox (Cloudflare Workers/Vercel Edge-compatible) with zero Node.js APIs.
 - 📦 **Dual ESM & CJS Build**: Full module support with clean TypeScript `.d.ts` declaration maps.
 
 ---
@@ -262,6 +263,24 @@ for exactly which spans and attributes are emitted, and the tradeoffs behind tha
 
 ---
 
+### Edge Runtime Compatibility
+
+The core client (`OllamaClient`, `Agent`, `ToolRegistry`, and everything exported from
+the package root) is built entirely on native `fetch` and Web Streams, so it runs
+unmodified on Cloudflare Workers, Vercel Edge Runtime, and Next.js Edge middleware/route
+handlers — no Node.js APIs required. The only Node-specific code (`SkillRegistry`, which
+reads `SKILL.md` files from disk) lives behind the separate `@shubhamtaywade82/ollama-client-ts/skills`
+subpath export and is never pulled into the main bundle.
+
+This is enforced in CI, not just asserted: `npm run verify:edge-runtime` bundles
+`dist/index.js` with `esbuild` targeting a browser/edge platform (which hard-fails on any
+`node:*` import, the same way Cloudflare's and Vercel's own bundlers do) and then runs a
+full `OllamaClient` + `Agent` + tool-calling round trip inside `@edge-runtime/vm` — a
+real Edge Runtime sandbox exposing only Web Standard globals. See
+[ADR 0006](./docs/adr/0006-edge-runtime-ci-and-benchmarks.md) for the full rationale.
+
+---
+
 ## Error Handling
 
 Every failure thrown by the client is an `OllamaClientError` subclass, so you can catch the base
@@ -312,7 +331,7 @@ observe per-endpoint circuit state directly.
 
 ## Testing
 
-The test suite contains 50 automated tests across 4 testing tiers:
+The test suite contains 62 automated tests across 4 testing tiers:
 
 ```bash
 # Run unit, integration, and functional test suite
@@ -324,7 +343,15 @@ npm run typecheck
 # Run linter
 npm run lint
 
-# Run full CI verification pipeline
+# Verify the built package runs correctly in a real Edge Runtime sandbox with zero
+# Node.js APIs (see "Edge Runtime Compatibility" above) — requires `npm run build` first
+npm run verify:edge-runtime
+
+# Run the benchmark suite (NDJSON streaming, schema conversion, tool dispatch, the
+# request pipeline)
+npm run bench
+
+# Run full CI verification pipeline (typecheck, lint, test, build, edge runtime check)
 npm run verify
 ```
 

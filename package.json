@@ -94,10 +94,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "verify:edge-runtime": "tsx scripts/verify-edge-runtime.ts",
+    "bench": "vitest bench",
     "check:types": "npx --yes @arethetypeswrong/cli@latest --pack .",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run verify:edge-runtime",
     "example": "tsx",
-    "prepublishOnly": "npm run clean && npm run typecheck && npm run lint && npm test && npm run build"
+    "prepublishOnly": "npm run clean && npm run typecheck && npm run lint && npm test && npm run build && npm run verify:edge-runtime"
   },
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.0",
@@ -110,6 +112,8 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
+    "@edge-runtime/primitives": "^6.0.0",
+    "@edge-runtime/vm": "^5.0.0",
     "@eslint/js": "^9.39.4",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/context-async-hooks": "^1.30.1",
@@ -118,6 +122,7 @@
     "@vitest/coverage-v8": "^4.1.9",
     "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
+    "esbuild": "^0.27.7",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^9.1.2",
     "prettier": "^3.9.4",
