@@ -12,6 +12,11 @@ export interface DefineToolOptions<TParams, TResult> {
   readonly description: string;
   readonly schema: z.ZodType<TParams>;
   readonly execute: ToolHandler<TParams, TResult>;
+  /**
+   * Per-tool execution timeout in milliseconds, overriding the registry's default.
+   * Pass `0` to explicitly disable timeout enforcement for this tool.
+   */
+  readonly timeoutMs?: number | undefined;
 }
 
 /**
@@ -29,6 +34,7 @@ export function defineTool<TParams, TResult>(
     description: options.description,
     schema: options.schema,
     execute: options.execute,
+    timeoutMs: options.timeoutMs,
     definition: {
       type: 'function',
       function: {
