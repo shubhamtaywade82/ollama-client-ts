@@ -10,16 +10,20 @@ export interface ToolCallFunction {
 }
 
 /**
- * Unlike OpenAI's `tool_calls[].id` / `tool_call_id`, Ollama's native API does not assign
- * an identifier to a tool call — a model turn's `tool_calls` array has no per-call ID to
- * correlate a result back to. `ToolRegistry.executeToolCalls` (see `src/tools/registry.ts`)
- * therefore correlates results with calls purely by array position/order, not by ID, and
- * `Agent` appends each result as a `role: 'tool'` message in that same order. This is why
- * tool execution here is either straightforwardly parallel (`Promise.all`, the default) or
- * concurrency-bounded (`ToolRegistry`'s `maxConcurrency` option) rather than modeled around
- * per-call IDs the way an OpenAI-style integration would be.
+ * Unlike OpenAI, Ollama's native `/api/chat` protocol does not assign an identifier to a
+ * tool call on the wire — a model turn's `tool_calls` array has no per-call ID from
+ * Ollama's side. `id` here is a **client-side synthesized value** (see
+ * `src/tools/tool-call-id.ts`), generated the first time the SDK sees a call without one
+ * and reused consistently afterward, so consumers get OpenAI-style `tool_call_id`
+ * correlation without the SDK depending on Ollama ever providing one. It carries no
+ * meaning to Ollama or the model — `ToolRegistry.executeToolCalls` still fundamentally
+ * dispatches by array position/order (straightforwardly parallel via `Promise.all` by
+ * default, or concurrency-bounded via `maxConcurrency`); `id` is a convenience layered on
+ * top for correlation/logging, not the underlying execution model. See ADR 0007.
  */
 export interface ToolCall {
+  /** Client-synthesized; see the type-level doc above. Always present once returned by this SDK. */
+  readonly id?: string | undefined;
   readonly function: ToolCallFunction;
 }
 
@@ -28,6 +32,8 @@ export interface Message {
   readonly content: string;
   readonly images?: readonly string[] | undefined;
   readonly tool_calls?: readonly ToolCall[] | undefined;
+  /** Set on a `role: 'tool'` message to identify which {@link ToolCall.id} this answers. */
+  readonly tool_call_id?: string | undefined;
   readonly thinking?: string | undefined;
 }
 
@@ -154,6 +160,8 @@ export interface EmbedRequestOptions extends RequestCancellationOptions {
   readonly model: string;
   readonly input: string | readonly string[];
   readonly truncate?: boolean | undefined;
+  /** Truncates the returned embedding vectors to this many dimensions, if supported by the model. */
+  readonly dimensions?: number | undefined;
   readonly options?: ModelOptions | undefined;
   readonly keep_alive?: string | number | undefined;
 }

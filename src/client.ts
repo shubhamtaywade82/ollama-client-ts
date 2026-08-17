@@ -11,7 +11,7 @@ import {
   resolveBaseUrl,
   type OllamaClientConfig,
 } from './config.js';
-import { OllamaClientError } from './errors.js';
+import { OllamaClientError, OllamaUnsupportedCapabilityError } from './errors.js';
 import { createConsoleLogger, NOOP_LOGGER, type Logger } from './logger.js';
 import { EndpointRegistry, type EndpointHealth } from './providers/endpoint-registry.js';
 import { checkEndpointHealth, type EndpointHealthCheckResult } from './providers/health-check.js';
@@ -31,6 +31,7 @@ import { createTimeoutSignal } from './transport/timeout.js';
 import { ModelsClient } from './models-client.js';
 import { OpenAICompatClient } from './integrations/openai.js';
 import { AnthropicCompatClient } from './integrations/anthropic.js';
+import { ensureToolCallIds } from './tools/tool-call-id.js';
 import {
   withSpan,
   ATTR_GEN_AI_SYSTEM,
@@ -99,13 +100,44 @@ export class OllamaClient {
     return this.models;
   }
 
+  /**
+   * Fail-fast guard for `format` (structured output) requests: throws before any network
+   * call if the candidate endpoint is inferred as Ollama Cloud, which does not currently
+   * support structured outputs (see `ModelCapabilities.supportsStructuredOutputRequest`).
+   * `unsupported_capability` is in `DEFAULT_FAILOVER_CODES`, so in a multi-endpoint setup
+   * this causes failover to the next candidate rather than failing the whole request.
+   */
+  private assertStructuredOutputSupported(baseUrl: string, model: string): void {
+    if (inferRuntimeMode(baseUrl) === 'cloud') {
+      throw new OllamaUnsupportedCapabilityError(
+        `Structured output ("format") requests are not supported against Ollama Cloud ` +
+          `endpoints (model "${model}" via ${baseUrl}). This is a known Ollama Cloud ` +
+          `limitation, not a bug in this SDK.`,
+        { capability: 'structuredOutputRequest' },
+      );
+    }
+  }
+
   async executeWithFailover<T>(
     operation: (http: HttpClient, signal: AbortSignal) => Promise<T>,
-    options?: { signal?: AbortSignal | undefined; timeoutMs?: number | undefined },
+    options?: {
+      signal?: AbortSignal | undefined;
+      timeoutMs?: number | undefined;
+      /**
+       * Disables cross-endpoint failover: only the single best candidate endpoint is
+       * tried (same-endpoint retry via `withRetry` still applies). For operations whose
+       * target IS the endpoint — model catalog/blob management — a different endpoint
+       * isn't an interchangeable substitute, so failing over to one would silently
+       * operate on the wrong server's state rather than retrying "the same" request. See
+       * ADR 0008. Defaults to `false`, preserving normal failover for inference calls.
+       */
+      singleEndpoint?: boolean | undefined;
+    },
   ): Promise<T> {
     const timeout = createTimeoutSignal(options?.timeoutMs ?? this.timeoutMs, options?.signal);
     try {
-      const candidates = this.registry.candidates();
+      const allCandidates = this.registry.candidates();
+      const candidates = options?.singleEndpoint ? allCandidates.slice(0, 1) : allCandidates;
       let lastError: Error | undefined;
 
       for (const [attemptIndex, endpoint] of candidates.entries()) {
@@ -156,6 +188,7 @@ export class OllamaClient {
   ): Promise<ChatResponse | OllamaStream<ChatResponse, ChatStreamResult>> {
     if (req.stream) {
       return this.executeWithFailover(async (http, signal) => {
+        if (req.format !== undefined) this.assertStructuredOutputSupported(http.baseUrl, req.model);
         const stream = await http.requestStream<ChatResponse>({
           path: '/api/chat',
           body: { ...req, stream: true },
@@ -172,15 +205,20 @@ export class OllamaClient {
         [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
       },
       async (span) => {
-        const res = await this.executeWithFailover(
-          (http, signal) =>
-            http.request<ChatResponse>({
-              path: '/api/chat',
-              body: { ...req, stream: false },
-              signal,
-            }),
-          req,
-        );
+        const rawRes = await this.executeWithFailover((http, signal) => {
+          if (req.format !== undefined)
+            this.assertStructuredOutputSupported(http.baseUrl, req.model);
+          return http.request<ChatResponse>({
+            path: '/api/chat',
+            body: { ...req, stream: false },
+            signal,
+          });
+        }, req);
+        const toolCalls = ensureToolCallIds(rawRes.message.tool_calls);
+        const res: ChatResponse =
+          toolCalls === rawRes.message.tool_calls
+            ? rawRes
+            : { ...rawRes, message: { ...rawRes.message, tool_calls: toolCalls } };
         span?.setAttributes({
           [ATTR_GEN_AI_RESPONSE_MODEL]: res.model,
           ...(res.prompt_eval_count !== undefined
@@ -227,6 +265,7 @@ export class OllamaClient {
   ): Promise<GenerateResponse | OllamaStream<GenerateResponse, GenerateStreamResult>> {
     if (req.stream) {
       return this.executeWithFailover(async (http, signal) => {
+        if (req.format !== undefined) this.assertStructuredOutputSupported(http.baseUrl, req.model);
         const stream = await http.requestStream<GenerateResponse>({
           path: '/api/generate',
           body: { ...req, stream: true },
@@ -243,15 +282,15 @@ export class OllamaClient {
         [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
       },
       async (span) => {
-        const res = await this.executeWithFailover(
-          (http, signal) =>
-            http.request<GenerateResponse>({
-              path: '/api/generate',
-              body: { ...req, stream: false },
-              signal,
-            }),
-          req,
-        );
+        const res = await this.executeWithFailover((http, signal) => {
+          if (req.format !== undefined)
+            this.assertStructuredOutputSupported(http.baseUrl, req.model);
+          return http.request<GenerateResponse>({
+            path: '/api/generate',
+            body: { ...req, stream: false },
+            signal,
+          });
+        }, req);
         span?.setAttributes({
           [ATTR_GEN_AI_RESPONSE_MODEL]: res.model,
           ...(res.prompt_eval_count !== undefined
@@ -345,7 +384,9 @@ export class OllamaClient {
 
   // --- Capabilities & Health ---
   capabilities(model: string): Promise<ModelCapabilities> {
-    return this.executeWithFailover((http) => detectModelCapabilities(http, model));
+    return this.executeWithFailover((http) => detectModelCapabilities(http, model), {
+      singleEndpoint: true,
+    });
   }
   runtimeMode(): RuntimeMode {
     const ep = this.registry.candidates()[0];

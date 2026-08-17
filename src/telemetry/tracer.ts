@@ -112,6 +112,7 @@ export const ATTR_GEN_AI_RESPONSE_MODEL = 'gen_ai.response.model';
 export const ATTR_GEN_AI_USAGE_INPUT_TOKENS = 'gen_ai.usage.input_tokens';
 export const ATTR_GEN_AI_USAGE_OUTPUT_TOKENS = 'gen_ai.usage.output_tokens';
 export const ATTR_GEN_AI_TOOL_NAME = 'gen_ai.tool.name';
+export const ATTR_GEN_AI_TOOL_CALL_ID = 'gen_ai.tool.call.id';
 
 // Attributes specific to this SDK's failover/agent model (no matching semconv entry).
 export const ATTR_OLLAMA_ENDPOINT_NAME = 'ollama.endpoint.name';

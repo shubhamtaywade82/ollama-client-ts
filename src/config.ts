@@ -43,6 +43,10 @@ export const DEFAULT_FAILOVER_CODES: readonly string[] = [
   'server_error',
   'rate_limited',
   'auth_error',
+  // A candidate endpoint rejected the request pre-flight for a known-unsupported
+  // capability (e.g. structured output against Ollama Cloud) — try the next candidate
+  // rather than failing outright; see OllamaUnsupportedCapabilityError.
+  'unsupported_capability',
 ];
 
 export interface OllamaClientConfig {

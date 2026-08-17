@@ -29,6 +29,8 @@ export interface Tool<TParams = Record<string, unknown>, TResult = unknown> {
 
 export interface ToolExecutionSuccess {
   readonly toolName: string;
+  /** Echoes the originating {@link ToolCall.id}, if the call had one. */
+  readonly toolCallId?: string | undefined;
   readonly success: true;
   readonly result: unknown;
   readonly outputString: string;
@@ -36,6 +38,8 @@ export interface ToolExecutionSuccess {
 
 export interface ToolExecutionFailure {
   readonly toolName: string;
+  /** Echoes the originating {@link ToolCall.id}, if the call had one. */
+  readonly toolCallId?: string | undefined;
   readonly success: false;
   readonly error: Error;
   readonly outputString: string;

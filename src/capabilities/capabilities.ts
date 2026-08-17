@@ -14,8 +14,19 @@ export interface ModelCapabilities {
   readonly supportsVision: boolean;
   readonly supportsEmbedding: boolean;
   readonly supportsCompletion: boolean;
+  readonly supportsThinking: boolean;
   readonly supportsStreaming: true;
-  readonly supportsStructuredOutputRequest: true;
+  /**
+   * Best-effort inference, not a guarantee: Ollama's `/api/show` does not report structured
+   * output support as a queryable capability, so this is inferred from {@link inferRuntimeMode}
+   * — `false` for `cloud`, since Ollama Cloud does not currently support structured outputs;
+   * `true` for `local`/`unknown`. A locally-hosted model that genuinely can't follow a JSON
+   * schema will still report `true` here; the request itself is the only reliable way to find
+   * out. `OllamaClient.chat`/`generate` apply this same inference as a fail-fast pre-flight
+   * guard whenever `format` is set, throwing `OllamaUnsupportedCapabilityError` rather than
+   * making a network call that Ollama Cloud is known to reject.
+   */
+  readonly supportsStructuredOutputRequest: boolean;
 }
 
 export function inferRuntimeMode(baseUrl: string): RuntimeMode {
@@ -57,8 +68,9 @@ export async function detectModelCapabilities(
     supportsVision: reportedSet.has('vision'),
     supportsEmbedding: reportedSet.has('embedding'),
     supportsCompletion: reportedSet.has('completion') || !reportedSet.has('embedding'),
+    supportsThinking: reportedSet.has('thinking'),
     supportsStreaming: true,
-    supportsStructuredOutputRequest: true,
+    supportsStructuredOutputRequest: inferRuntimeMode(http.baseUrl) !== 'cloud',
   };
 }
 
