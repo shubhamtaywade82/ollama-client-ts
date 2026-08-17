@@ -18,6 +18,7 @@
 - 🔌 **Model Context Protocol (MCP)**: Native adapters to convert MCP tools into Ollama-compatible function schemas.
 - 🌉 **OpenAI & Anthropic Compatibility Bridges**: Built-in clients for `/v1/chat/completions`, `/v1/models`, and `/v1/messages`.
 - 🌊 **Web Stream Adapters**: Drop-in adapters (`toTextStream`, `toDataStream`, `toResponse`) for Next.js Route Handlers and Vercel AI SDK.
+- 📈 **OpenTelemetry Instrumentation**: Automatic spans for HTTP requests, endpoint failover, chat/generate calls, and agent runs — zero-cost when OpenTelemetry isn't installed.
 - 📦 **Dual ESM & CJS Build**: Full module support with clean TypeScript `.d.ts` declaration maps.
 
 ---
@@ -105,7 +106,9 @@ const res = await client.embed({
   ],
 });
 
-console.log(`Generated ${res.embeddings.length} vectors with dimension ${res.embeddings[0].length}`);
+console.log(
+  `Generated ${res.embeddings.length} vectors with dimension ${res.embeddings[0].length}`,
+);
 ```
 
 ### Autonomous Agent & Tool Calling
@@ -155,7 +158,7 @@ const registry = new ToolRegistry({
 ```
 
 - **`timeoutMs`** races the tool call against a timer and rejects with
-  `OllamaToolTimeoutError` on expiry. Enforcement is cooperative: it stops the *agent*
+  `OllamaToolTimeoutError` on expiry. Enforcement is cooperative: it stops the _agent_
   from waiting indefinitely, but genuinely halting a tool's in-flight work still
   requires the tool itself to check `ToolExecutionContext.signal` (which the registry
   aborts on timeout) — plain synchronous or non-abort-aware async code cannot be
@@ -210,7 +213,12 @@ const anthropicRes = await client.anthropic.messages({
 const client = new OllamaClient({
   endpoints: [
     { name: 'local-gpu', baseUrl: 'http://localhost:11434', priority: 10 },
-    { name: 'cloud-replica', baseUrl: 'https://ollama.internal.net', apiKey: 'secret', priority: 5 },
+    {
+      name: 'cloud-replica',
+      baseUrl: 'https://ollama.internal.net',
+      apiKey: 'secret',
+      priority: 5,
+    },
   ],
   timeoutMs: 30_000,
   retries: 3,
@@ -223,26 +231,57 @@ console.log(health);
 
 ---
 
+### Observability with OpenTelemetry
+
+The client automatically emits [OpenTelemetry](https://opentelemetry.io/) spans for HTTP
+requests, endpoint failover attempts, `chat`/`generate` calls (using the
+[Gen AI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)), and
+`Agent` runs (`invoke_agent` → `ollama.agent.turn` → `execute_tool`) — no client
+configuration required. `@opentelemetry/api` is an **optional peer dependency**: if it
+isn't installed, or if your process hasn't registered a `TracerProvider`, tracing is a
+no-op and costs nothing beyond a single cached import attempt.
+
+```bash
+npm install @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node
+```
+
+```typescript
+// instrumentation.ts — run before importing the rest of your app
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+
+const sdk = new NodeSDK({
+  instrumentations: [getNodeAutoInstrumentations()],
+});
+sdk.start();
+```
+
+Once a `TracerProvider` is registered, every `OllamaClient`/`Agent` call in your process
+produces spans automatically. See [ADR 0005](./docs/adr/0005-opentelemetry-instrumentation.md)
+for exactly which spans and attributes are emitted, and the tradeoffs behind that design.
+
+---
+
 ## Error Handling
 
 Every failure thrown by the client is an `OllamaClientError` subclass, so you can catch the base
 class or narrow to a specific `code`:
 
-| Class | `code` | `retryable` | Thrown when |
-| --- | --- | --- | --- |
-| `OllamaNetworkError` | `network_error` | `true` | The request failed before a response was received (DNS, connection refused, etc). |
-| `OllamaTimeoutError` | `timeout` | `true` | The request exceeded `timeoutMs`. |
-| `OllamaAuthError` | `auth_error` | `false` | The endpoint returned `401`/`403`. |
-| `OllamaNotFoundError` | `not_found` | `false` | The endpoint returned `404` (e.g. unknown model). |
-| `OllamaRateLimitError` | `rate_limited` | `true` | The endpoint returned `429`. |
-| `OllamaServerError` | `server_error` | `true` | The endpoint returned `5xx`. |
-| `OllamaAbortError` | `aborted` | `false` | The request was cancelled via `AbortSignal`. |
-| `OllamaToolValidationError` | `tool_validation_error` | `false` | A tool call's arguments, or a `chatWithSchema`/`generateWithSchema` result, failed Zod validation. |
-| `OllamaAgentMaxIterationsError` | `agent_max_iterations_exceeded` | `false` | An `Agent` run exceeded `maxTurns` without producing a final answer. |
-| `OllamaMcpError` | `mcp_error` | varies | An MCP `listTools`/`callTool` call failed. |
-| `OllamaSkillNotFoundError` | `skill_not_found` | `false` | `applySkill` referenced a skill that isn't registered. |
-| `OllamaSkillInvalidError` | `skill_invalid` | `false` | A skill's frontmatter or contents failed to parse. |
-| `OllamaGenericClientError` | `client_error` | `false` | Any other non-2xx response not covered above. |
+| Class                           | `code`                          | `retryable` | Thrown when                                                                                        |
+| ------------------------------- | ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| `OllamaNetworkError`            | `network_error`                 | `true`      | The request failed before a response was received (DNS, connection refused, etc).                  |
+| `OllamaTimeoutError`            | `timeout`                       | `true`      | The request exceeded `timeoutMs`.                                                                  |
+| `OllamaAuthError`               | `auth_error`                    | `false`     | The endpoint returned `401`/`403`.                                                                 |
+| `OllamaNotFoundError`           | `not_found`                     | `false`     | The endpoint returned `404` (e.g. unknown model).                                                  |
+| `OllamaRateLimitError`          | `rate_limited`                  | `true`      | The endpoint returned `429`.                                                                       |
+| `OllamaServerError`             | `server_error`                  | `true`      | The endpoint returned `5xx`.                                                                       |
+| `OllamaAbortError`              | `aborted`                       | `false`     | The request was cancelled via `AbortSignal`.                                                       |
+| `OllamaToolValidationError`     | `tool_validation_error`         | `false`     | A tool call's arguments, or a `chatWithSchema`/`generateWithSchema` result, failed Zod validation. |
+| `OllamaAgentMaxIterationsError` | `agent_max_iterations_exceeded` | `false`     | An `Agent` run exceeded `maxTurns` without producing a final answer.                               |
+| `OllamaMcpError`                | `mcp_error`                     | varies      | An MCP `listTools`/`callTool` call failed.                                                         |
+| `OllamaSkillNotFoundError`      | `skill_not_found`               | `false`     | `applySkill` referenced a skill that isn't registered.                                             |
+| `OllamaSkillInvalidError`       | `skill_invalid`                 | `false`     | A skill's frontmatter or contents failed to parse.                                                 |
+| `OllamaGenericClientError`      | `client_error`                  | `false`     | Any other non-2xx response not covered above.                                                      |
 
 All subclasses carry `status`, `retryable`, and optional `request`/`response` context, and preserve
 the original error via the standard `cause` property:
