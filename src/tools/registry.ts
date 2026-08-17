@@ -7,6 +7,7 @@ import {
   OllamaToolTimeoutError,
   OllamaToolValidationError,
 } from '../errors.js';
+import { withSpan, setSpanError, ATTR_GEN_AI_TOOL_NAME } from '../telemetry/index.js';
 import type { ToolCall, ToolDefinition } from '../types.js';
 import type { Tool, ToolExecutionContext, ToolExecutionResult } from './types.js';
 
@@ -84,6 +85,20 @@ export class ToolRegistry {
   async executeToolCall(
     toolCall: ToolCall,
     ctx: ToolExecutionContext = {},
+  ): Promise<ToolExecutionResult> {
+    const { name } = toolCall.function;
+    return withSpan(`execute_tool ${name}`, { [ATTR_GEN_AI_TOOL_NAME]: name }, async (span) => {
+      const result = await this.executeToolCallUninstrumented(toolCall, ctx);
+      if (!result.success) {
+        await setSpanError(span, result.error);
+      }
+      return result;
+    });
+  }
+
+  private async executeToolCallUninstrumented(
+    toolCall: ToolCall,
+    ctx: ToolExecutionContext,
   ): Promise<ToolExecutionResult> {
     const { name, arguments: args } = toolCall.function;
     const tool = this.tools.get(name);

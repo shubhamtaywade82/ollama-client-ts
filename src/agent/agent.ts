@@ -3,6 +3,15 @@
  */
 
 import { OllamaAgentMaxIterationsError } from '../errors.js';
+import {
+  withSpan,
+  ATTR_GEN_AI_SYSTEM,
+  ATTR_GEN_AI_OPERATION_NAME,
+  ATTR_GEN_AI_REQUEST_MODEL,
+  ATTR_OLLAMA_AGENT_MAX_ITERATIONS,
+  ATTR_OLLAMA_AGENT_ITERATION,
+  GEN_AI_SYSTEM_OLLAMA,
+} from '../telemetry/index.js';
 import type { Message, ModelOptions, ToolDefinition } from '../types.js';
 import type { ToolRegistry } from '../tools/registry.js';
 import type { AgentConfig, AgentHooks, AgentResult, AgentRunInput, AgentTurn } from './types.js';
@@ -32,52 +41,78 @@ export class Agent {
     this.hooks = config.hooks;
   }
 
-  async run(input: AgentRunInput): Promise<AgentResult> {
+  run(input: AgentRunInput): Promise<AgentResult> {
+    return withSpan(
+      `invoke_agent ${input.model}`,
+      {
+        [ATTR_GEN_AI_SYSTEM]: GEN_AI_SYSTEM_OLLAMA,
+        [ATTR_GEN_AI_OPERATION_NAME]: 'invoke_agent',
+        [ATTR_GEN_AI_REQUEST_MODEL]: input.model,
+        [ATTR_OLLAMA_AGENT_MAX_ITERATIONS]: this.maxIterations,
+      },
+      () => this.runLoop(input),
+    );
+  }
+
+  private async runLoop(input: AgentRunInput): Promise<AgentResult> {
     const history: Message[] = [...input.messages];
     const turns: AgentTurn[] = [];
     const toolDefs = this.tools?.definitions();
 
     for (let iteration = 1; iteration <= this.maxIterations; iteration++) {
-      this.hooks?.onTurnStart?.(iteration);
+      const outcome = await withSpan(
+        'ollama.agent.turn',
+        { [ATTR_OLLAMA_AGENT_ITERATION]: iteration },
+        async () => {
+          this.hooks?.onTurnStart?.(iteration);
 
-      const response = await this.client.chat({
-        model: input.model,
-        messages: history,
-        ...(toolDefs !== undefined ? { tools: toolDefs } : {}),
-        ...(input.options !== undefined ? { options: input.options } : {}),
-        ...(input.think !== undefined ? { think: input.think } : {}),
-        stream: false,
-        ...(input.signal !== undefined ? { signal: input.signal } : {}),
-      });
+          const response = await this.client.chat({
+            model: input.model,
+            messages: history,
+            ...(toolDefs !== undefined ? { tools: toolDefs } : {}),
+            ...(input.options !== undefined ? { options: input.options } : {}),
+            ...(input.think !== undefined ? { think: input.think } : {}),
+            stream: false,
+            ...(input.signal !== undefined ? { signal: input.signal } : {}),
+          });
 
-      const assistantMessage = response.message;
-      history.push(assistantMessage);
+          const assistantMessage = response.message;
+          history.push(assistantMessage);
 
-      const toolCalls = assistantMessage.tool_calls;
-      if (!toolCalls || toolCalls.length === 0 || !this.tools) {
-        const finalTurn: AgentTurn = { iteration, message: assistantMessage };
-        turns.push(finalTurn);
-        this.hooks?.onTurnEnd?.(finalTurn);
-        return { finalMessage: assistantMessage, turns, totalIterations: iteration };
+          const toolCalls = assistantMessage.tool_calls;
+          if (!toolCalls || toolCalls.length === 0 || !this.tools) {
+            const finalTurn: AgentTurn = { iteration, message: assistantMessage };
+            turns.push(finalTurn);
+            this.hooks?.onTurnEnd?.(finalTurn);
+            return { done: true as const, finalMessage: assistantMessage };
+          }
+
+          for (const tc of toolCalls) {
+            this.hooks?.onToolCallStart?.(tc);
+          }
+
+          const toolResults = await this.tools.executeToolCalls(toolCalls, {
+            signal: input.signal,
+          });
+
+          for (const res of toolResults) {
+            this.hooks?.onToolCallEnd?.(res);
+            history.push({
+              role: 'tool',
+              content: res.outputString,
+            });
+          }
+
+          const turn: AgentTurn = { iteration, message: assistantMessage, toolCalls, toolResults };
+          turns.push(turn);
+          this.hooks?.onTurnEnd?.(turn);
+          return { done: false as const };
+        },
+      );
+
+      if (outcome.done) {
+        return { finalMessage: outcome.finalMessage, turns, totalIterations: iteration };
       }
-
-      for (const tc of toolCalls) {
-        this.hooks?.onToolCallStart?.(tc);
-      }
-
-      const toolResults = await this.tools.executeToolCalls(toolCalls, { signal: input.signal });
-
-      for (const res of toolResults) {
-        this.hooks?.onToolCallEnd?.(res);
-        history.push({
-          role: 'tool',
-          content: res.outputString,
-        });
-      }
-
-      const turn: AgentTurn = { iteration, message: assistantMessage, toolCalls, toolResults };
-      turns.push(turn);
-      this.hooks?.onTurnEnd?.(turn);
     }
 
     throw new OllamaAgentMaxIterationsError(

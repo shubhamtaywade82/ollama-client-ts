@@ -29,6 +29,18 @@ import { createTimeoutSignal } from './transport/timeout.js';
 import { ModelsClient } from './models-client.js';
 import { OpenAICompatClient } from './integrations/openai.js';
 import { AnthropicCompatClient } from './integrations/anthropic.js';
+import {
+  withSpan,
+  ATTR_GEN_AI_SYSTEM,
+  ATTR_GEN_AI_OPERATION_NAME,
+  ATTR_GEN_AI_REQUEST_MODEL,
+  ATTR_GEN_AI_RESPONSE_MODEL,
+  ATTR_GEN_AI_USAGE_INPUT_TOKENS,
+  ATTR_GEN_AI_USAGE_OUTPUT_TOKENS,
+  ATTR_OLLAMA_ENDPOINT_NAME,
+  ATTR_OLLAMA_ENDPOINT_ATTEMPT,
+  GEN_AI_SYSTEM_OLLAMA,
+} from './telemetry/index.js';
 import type {
   ChatRequestOptions,
   ChatResponse,
@@ -93,7 +105,7 @@ export class OllamaClient {
       const candidates = this.registry.candidates();
       let lastError: Error | undefined;
 
-      for (const endpoint of candidates) {
+      for (const [attemptIndex, endpoint] of candidates.entries()) {
         this.logger.debug(`Executing on endpoint "${endpoint.name}" (${endpoint.baseUrl})`);
         const http = new HttpClient({
           baseUrl: endpoint.baseUrl,
@@ -103,7 +115,14 @@ export class OllamaClient {
         });
 
         try {
-          const result = await withRetry(() => operation(http, timeout.signal), this.retryConfig);
+          const result = await withSpan(
+            'ollama.endpoint.attempt',
+            {
+              [ATTR_OLLAMA_ENDPOINT_NAME]: endpoint.name,
+              [ATTR_OLLAMA_ENDPOINT_ATTEMPT]: attemptIndex,
+            },
+            () => withRetry(() => operation(http, timeout.signal), this.retryConfig),
+          );
           this.registry.reportSuccess(endpoint.name);
           return result;
         } catch (err) {
@@ -142,10 +161,34 @@ export class OllamaClient {
         return normalizeChatStream(stream);
       }, req);
     }
-    return this.executeWithFailover(
-      (http, signal) =>
-        http.request<ChatResponse>({ path: '/api/chat', body: { ...req, stream: false }, signal }),
-      req,
+    return withSpan(
+      `chat ${req.model}`,
+      {
+        [ATTR_GEN_AI_SYSTEM]: GEN_AI_SYSTEM_OLLAMA,
+        [ATTR_GEN_AI_OPERATION_NAME]: 'chat',
+        [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
+      },
+      async (span) => {
+        const res = await this.executeWithFailover(
+          (http, signal) =>
+            http.request<ChatResponse>({
+              path: '/api/chat',
+              body: { ...req, stream: false },
+              signal,
+            }),
+          req,
+        );
+        span?.setAttributes({
+          [ATTR_GEN_AI_RESPONSE_MODEL]: res.model,
+          ...(res.prompt_eval_count !== undefined
+            ? { [ATTR_GEN_AI_USAGE_INPUT_TOKENS]: res.prompt_eval_count }
+            : {}),
+          ...(res.eval_count !== undefined
+            ? { [ATTR_GEN_AI_USAGE_OUTPUT_TOKENS]: res.eval_count }
+            : {}),
+        });
+        return res;
+      },
     );
   }
 
@@ -189,14 +232,34 @@ export class OllamaClient {
         return normalizeGenerateStream(stream);
       }, req);
     }
-    return this.executeWithFailover(
-      (http, signal) =>
-        http.request<GenerateResponse>({
-          path: '/api/generate',
-          body: { ...req, stream: false },
-          signal,
-        }),
-      req,
+    return withSpan(
+      `text_completion ${req.model}`,
+      {
+        [ATTR_GEN_AI_SYSTEM]: GEN_AI_SYSTEM_OLLAMA,
+        [ATTR_GEN_AI_OPERATION_NAME]: 'text_completion',
+        [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
+      },
+      async (span) => {
+        const res = await this.executeWithFailover(
+          (http, signal) =>
+            http.request<GenerateResponse>({
+              path: '/api/generate',
+              body: { ...req, stream: false },
+              signal,
+            }),
+          req,
+        );
+        span?.setAttributes({
+          [ATTR_GEN_AI_RESPONSE_MODEL]: res.model,
+          ...(res.prompt_eval_count !== undefined
+            ? { [ATTR_GEN_AI_USAGE_INPUT_TOKENS]: res.prompt_eval_count }
+            : {}),
+          ...(res.eval_count !== undefined
+            ? { [ATTR_GEN_AI_USAGE_OUTPUT_TOKENS]: res.eval_count }
+            : {}),
+        });
+        return res;
+      },
     );
   }
 

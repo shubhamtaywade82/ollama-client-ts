@@ -13,6 +13,7 @@ Format: one Markdown file per decision, numbered sequentially, following
 | [0002](./0002-dual-esm-cjs-packaging.md) | Dual ESM/CJS Packaging Strategy |
 | [0003](./0003-zod-v3-v4-dual-support.md) | Simultaneous Zod v3 and v4 Support |
 | [0004](./0004-tool-execution-sandboxing.md) | Tool Execution Sandboxing Model |
+| [0005](./0005-opentelemetry-instrumentation.md) | OpenTelemetry Instrumentation |
 
 A new ADR is warranted for decisions that are expensive to reverse, affect the public
 API surface or dependency contract, or where a future maintainer would reasonably ask
