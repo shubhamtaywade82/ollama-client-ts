@@ -138,6 +138,13 @@ const response = await agent.run({
 console.log(response.finalMessage.content);
 ```
 
+Ollama's native tool-calling protocol has no OpenAI-style call ID, but the SDK
+synthesizes a stable one so results are still correlatable without tracking array
+position by hand: `response.turns[0].toolCalls[0].id` matches
+`response.turns[0].toolResults[0].toolCallId`, and the `role: 'tool'` message `Agent`
+appends to history carries the same value as `tool_call_id`. See
+[ADR 0007](./docs/adr/0007-synthetic-tool-call-ids.md).
+
 ### Tool Execution Safety & Sandboxing
 
 Tool arguments and, indirectly, which tools get called at all are driven by model
@@ -331,7 +338,7 @@ observe per-endpoint circuit state directly.
 
 ## Testing
 
-The test suite contains 62 automated tests across 4 testing tiers:
+The test suite contains 87 automated tests across 4 testing tiers:
 
 ```bash
 # Run unit, integration, and functional test suite

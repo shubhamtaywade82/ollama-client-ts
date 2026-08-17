@@ -4,6 +4,7 @@
 
 import type { ChatResponse, GenerateResponse, ProgressResponse } from '../types.js';
 import { extractUsage, NANOS_PER_MS } from '../usage.js';
+import { ensureToolCallIds } from '../tools/tool-call-id.js';
 import { OllamaStream } from './stream.js';
 import type {
   AbortableAsyncIterable,
@@ -61,6 +62,29 @@ function mapChatChunk(
   return events;
 }
 
+/**
+ * Wraps `source` so every chunk's `message.tool_calls` carries a stable client-synthesized
+ * `id` (see `../tools/tool-call-id.js`) before it reaches either the aggregator or the
+ * per-chunk event mapper — both read the same chunk object, so ids must be assigned exactly
+ * once here rather than independently in each, or the streamed `tool_call` event and the
+ * final aggregated message would end up with two different ids for the same call.
+ */
+function withStableToolCallIds(
+  source: AbortableAsyncIterable<ChatResponse>,
+): AbortableAsyncIterable<ChatResponse> {
+  async function* generator(): AsyncGenerator<ChatResponse, void, undefined> {
+    for await (const chunk of source) {
+      const toolCalls = chunk.message?.tool_calls;
+      if (!toolCalls?.length) {
+        yield chunk;
+        continue;
+      }
+      yield { ...chunk, message: { ...chunk.message, tool_calls: ensureToolCallIds(toolCalls) } };
+    }
+  }
+  return Object.assign(generator(), { abort: source.abort });
+}
+
 export function normalizeChatStream(
   source: AbortableAsyncIterable<ChatResponse>,
 ): OllamaStream<ChatResponse, ChatStreamResult> {
@@ -69,7 +93,7 @@ export function normalizeChatStream(
     model: '',
     done: false,
   };
-  return new OllamaStream(source, mapChatChunk, aggregateChat, initial);
+  return new OllamaStream(withStableToolCallIds(source), mapChatChunk, aggregateChat, initial);
 }
 
 function aggregateGenerate(

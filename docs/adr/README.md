@@ -15,6 +15,7 @@ Format: one Markdown file per decision, numbered sequentially, following
 | [0004](./0004-tool-execution-sandboxing.md)      | Tool Execution Sandboxing Model             |
 | [0005](./0005-opentelemetry-instrumentation.md)  | OpenTelemetry Instrumentation               |
 | [0006](./0006-edge-runtime-ci-and-benchmarks.md) | Edge Runtime CI Verification and Benchmarks |
+| [0007](./0007-synthetic-tool-call-ids.md)        | Synthetic Tool-Call IDs                     |
 
 A new ADR is warranted for decisions that are expensive to reverse, affect the public
 API surface or dependency contract, or where a future maintainer would reasonably ask

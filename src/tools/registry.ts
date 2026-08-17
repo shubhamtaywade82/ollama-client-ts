@@ -7,7 +7,12 @@ import {
   OllamaToolTimeoutError,
   OllamaToolValidationError,
 } from '../errors.js';
-import { withSpan, setSpanError, ATTR_GEN_AI_TOOL_NAME } from '../telemetry/index.js';
+import {
+  withSpan,
+  setSpanError,
+  ATTR_GEN_AI_TOOL_NAME,
+  ATTR_GEN_AI_TOOL_CALL_ID,
+} from '../telemetry/index.js';
 import type { ToolCall, ToolDefinition } from '../types.js';
 import type { Tool, ToolExecutionContext, ToolExecutionResult } from './types.js';
 
@@ -87,13 +92,17 @@ export class ToolRegistry {
     ctx: ToolExecutionContext = {},
   ): Promise<ToolExecutionResult> {
     const { name } = toolCall.function;
-    return withSpan(`execute_tool ${name}`, { [ATTR_GEN_AI_TOOL_NAME]: name }, async (span) => {
-      const result = await this.executeToolCallUninstrumented(toolCall, ctx);
-      if (!result.success) {
-        await setSpanError(span, result.error);
-      }
-      return result;
-    });
+    return withSpan(
+      `execute_tool ${name}`,
+      { [ATTR_GEN_AI_TOOL_NAME]: name, [ATTR_GEN_AI_TOOL_CALL_ID]: toolCall.id },
+      async (span) => {
+        const result = await this.executeToolCallUninstrumented(toolCall, ctx);
+        if (!result.success) {
+          await setSpanError(span, result.error);
+        }
+        return result;
+      },
+    );
   }
 
   private async executeToolCallUninstrumented(
@@ -125,6 +134,7 @@ export class ToolRegistry {
       );
       return {
         toolName: name,
+        toolCallId: toolCall.id,
         success: true,
         result,
         outputString,
@@ -136,10 +146,11 @@ export class ToolRegistry {
   }
 
   /**
-   * Executes every call in `toolCalls` and returns results in the same order. Runs fully
-   * in parallel (`Promise.all`) unless `maxConcurrency` was configured, in which case a
-   * bounded worker pool is used instead. Results are correlated with their calls by array
-   * position, not by an ID — see the {@link ToolCall} docs for why.
+   * Executes every call in `toolCalls` and returns results in the same order, so results
+   * are always correlatable by array position regardless of `id`. Each result also echoes
+   * its call's `toolCallId` for callers who'd rather match by ID — see the {@link ToolCall}
+   * docs for how that id is produced. Runs fully in parallel (`Promise.all`) unless
+   * `maxConcurrency` was configured, in which case a bounded worker pool is used instead.
    */
   async executeToolCalls(
     toolCalls: readonly ToolCall[],
@@ -235,6 +246,7 @@ export class ToolRegistry {
     const fallbackMessage = this.onError ? this.onError(error, toolCall) : error.message;
     return {
       toolName: toolCall.function.name,
+      toolCallId: toolCall.id,
       success: false,
       error,
       outputString: this.truncateOutput(fallbackMessage),

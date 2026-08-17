@@ -12,6 +12,7 @@ import {
   ATTR_OLLAMA_AGENT_ITERATION,
   GEN_AI_SYSTEM_OLLAMA,
 } from '../telemetry/index.js';
+import { ensureToolCallIds } from '../tools/tool-call-id.js';
 import type { Message, ModelOptions, ToolDefinition } from '../types.js';
 import type { ToolRegistry } from '../tools/registry.js';
 import type { AgentConfig, AgentHooks, AgentResult, AgentRunInput, AgentTurn } from './types.js';
@@ -32,9 +33,12 @@ export interface AgentChatClient {
  * Runs a multi-turn `chat` + tool-execution loop until the model responds without
  * requesting further tool calls, or `maxIterations` is exceeded. Tool calls within a
  * single turn are handed to `ToolRegistry.executeToolCalls` and their results are
- * appended to history in the same order the model requested them — see the {@link
- * ToolCall} type docs for why this is order-based rather than ID-based (Ollama's native
- * tool-calling protocol has no OpenAI-style `tool_call_id`).
+ * appended to history in the same order the model requested them, each tagged with the
+ * originating call's `tool_call_id` — see the {@link ToolCall} type docs for how that id
+ * is produced (Ollama's native tool-calling protocol has none; this SDK synthesizes one).
+ * `Agent` assigns ids defensively even when `AgentChatClient` isn't `OllamaClient` (e.g. a
+ * custom/test implementation), so this guarantee holds regardless of which chat client is
+ * supplied.
  */
 export class Agent {
   private readonly client: AgentChatClient;
@@ -84,10 +88,14 @@ export class Agent {
             ...(input.signal !== undefined ? { signal: input.signal } : {}),
           });
 
-          const assistantMessage = response.message;
+          const rawToolCalls = response.message.tool_calls;
+          const toolCalls = ensureToolCallIds(rawToolCalls);
+          const assistantMessage: Message =
+            toolCalls === rawToolCalls
+              ? response.message
+              : { ...response.message, tool_calls: toolCalls };
           history.push(assistantMessage);
 
-          const toolCalls = assistantMessage.tool_calls;
           if (!toolCalls || toolCalls.length === 0 || !this.tools) {
             const finalTurn: AgentTurn = { iteration, message: assistantMessage };
             turns.push(finalTurn);
@@ -107,6 +115,7 @@ export class Agent {
             this.hooks?.onToolCallEnd?.(res);
             history.push({
               role: 'tool',
+              ...(res.toolCallId !== undefined ? { tool_call_id: res.toolCallId } : {}),
               content: res.outputString,
             });
           }

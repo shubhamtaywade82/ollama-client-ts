@@ -31,6 +31,7 @@ import { createTimeoutSignal } from './transport/timeout.js';
 import { ModelsClient } from './models-client.js';
 import { OpenAICompatClient } from './integrations/openai.js';
 import { AnthropicCompatClient } from './integrations/anthropic.js';
+import { ensureToolCallIds } from './tools/tool-call-id.js';
 import {
   withSpan,
   ATTR_GEN_AI_SYSTEM,
@@ -172,7 +173,7 @@ export class OllamaClient {
         [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
       },
       async (span) => {
-        const res = await this.executeWithFailover(
+        const rawRes = await this.executeWithFailover(
           (http, signal) =>
             http.request<ChatResponse>({
               path: '/api/chat',
@@ -181,6 +182,11 @@ export class OllamaClient {
             }),
           req,
         );
+        const toolCalls = ensureToolCallIds(rawRes.message.tool_calls);
+        const res: ChatResponse =
+          toolCalls === rawRes.message.tool_calls
+            ? rawRes
+            : { ...rawRes, message: { ...rawRes.message, tool_calls: toolCalls } };
         span?.setAttributes({
           [ATTR_GEN_AI_RESPONSE_MODEL]: res.model,
           ...(res.prompt_eval_count !== undefined
