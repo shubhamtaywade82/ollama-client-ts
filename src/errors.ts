@@ -126,6 +126,22 @@ export class OllamaToolValidationError extends OllamaClientError {
   }
 }
 
+export class OllamaToolTimeoutError extends OllamaClientError {
+  readonly toolName: string;
+  readonly timeoutMs: number;
+  constructor(
+    message: string,
+    options: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> & {
+      toolName: string;
+      timeoutMs: number;
+    },
+  ) {
+    super(message, { ...options, code: 'tool_timeout', retryable: false });
+    this.toolName = options.toolName;
+    this.timeoutMs = options.timeoutMs;
+  }
+}
+
 export class OllamaAgentMaxIterationsError extends OllamaClientError {
   readonly maxIterations: number;
   constructor(

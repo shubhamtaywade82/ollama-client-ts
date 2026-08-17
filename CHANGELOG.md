@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tool definition helper (`defineTool`) with Zod parameter schemas.
   - Tool registry with duplicate detection and execution error recovery.
   - Model Context Protocol (MCP) server integration (`createMcpToolSet`, `registerMcpTools`).
+  - Opt-in tool execution sandboxing: per-tool/registry `timeoutMs` (cooperative cancellation via `AbortSignal`, surfaced as `OllamaToolTimeoutError`), `maxConcurrency` bounding parallel tool calls, and `maxOutputChars` truncating oversized tool output before it re-enters the conversation history. See [ADR 0004](./docs/adr/0004-tool-execution-sandboxing.md).
+- **Architecture Decision Records:** `docs/adr/` documents the rationale behind the circuit breaker failure model, the dual ESM/CJS packaging strategy, Zod v3/v4 dual support, and the tool execution sandboxing model.
 - **Protocol Compatibility Bridges:**
   - OpenAI compatibility bridge (`/v1/chat/completions`, `/v1/models`).
   - Anthropic compatibility bridge (`/v1/messages`).

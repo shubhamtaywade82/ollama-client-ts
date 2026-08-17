@@ -2,18 +2,49 @@
  * Tool registry for managing definitions and executing model tool calls.
  */
 
-import { OllamaNotFoundError, OllamaToolValidationError } from '../errors.js';
+import {
+  OllamaNotFoundError,
+  OllamaToolTimeoutError,
+  OllamaToolValidationError,
+} from '../errors.js';
 import type { ToolCall, ToolDefinition } from '../types.js';
 import type { Tool, ToolExecutionContext, ToolExecutionResult } from './types.js';
 
 export interface ToolRegistryOptions {
   readonly tools?: readonly Tool<never, unknown>[] | undefined;
   readonly onError?: ((error: Error, toolCall: ToolCall) => string) | undefined;
+  /**
+   * Default per-call execution timeout in milliseconds, applied to any tool that
+   * doesn't declare its own `timeoutMs`. Undefined (the default) means no timeout is
+   * enforced, matching prior behavior. Recommended whenever tool arguments or
+   * implementations are influenced by model output you don't fully control, since an
+   * unbounded tool call can otherwise stall the entire agent loop indefinitely.
+   *
+   * Enforcement is cooperative: it races the tool's promise against a timer and
+   * reports a timeout failure, but cannot forcibly halt synchronous or non-abort-aware
+   * asynchronous work already in flight on the same thread. Tools that perform I/O
+   * should honor `ToolExecutionContext.signal` to stop promptly on timeout.
+   */
+  readonly timeoutMs?: number | undefined;
+  /**
+   * Maximum number of tool calls executed concurrently by `executeToolCalls`.
+   * Undefined (the default) runs all calls in parallel, matching prior behavior.
+   */
+  readonly maxConcurrency?: number | undefined;
+  /**
+   * Maximum length of a tool's `outputString` before it is truncated. Guards against a
+   * single tool call flooding the conversation history / model context (and process
+   * memory) with unbounded output. Undefined (the default) applies no limit.
+   */
+  readonly maxOutputChars?: number | undefined;
 }
 
 export class ToolRegistry {
   private readonly tools = new Map<string, Tool<never, unknown>>();
   private readonly onError?: ((error: Error, toolCall: ToolCall) => string) | undefined;
+  private readonly defaultTimeoutMs?: number | undefined;
+  private readonly maxConcurrency?: number | undefined;
+  private readonly maxOutputChars?: number | undefined;
 
   constructor(toolsOrOptions?: readonly Tool<never, unknown>[] | ToolRegistryOptions | undefined) {
     if (Array.isArray(toolsOrOptions)) {
@@ -21,6 +52,9 @@ export class ToolRegistry {
     } else if (toolsOrOptions !== undefined) {
       const opts = toolsOrOptions as ToolRegistryOptions;
       this.onError = opts.onError;
+      this.defaultTimeoutMs = opts.timeoutMs;
+      this.maxConcurrency = opts.maxConcurrency;
+      this.maxOutputChars = opts.maxOutputChars;
       if (opts.tools) {
         this.registerMany(opts.tools);
       }
@@ -70,12 +104,15 @@ export class ToolRegistry {
     }
 
     try {
-      const result = await tool.execute(parseResult.data, ctx);
+      const result = await this.runWithTimeout(tool, parseResult.data, ctx, name);
+      const outputString = this.truncateOutput(
+        typeof result === 'string' ? result : JSON.stringify(result),
+      );
       return {
         toolName: name,
         success: true,
         result,
-        outputString: typeof result === 'string' ? result : JSON.stringify(result),
+        outputString,
       };
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
@@ -87,7 +124,90 @@ export class ToolRegistry {
     toolCalls: readonly ToolCall[],
     ctx: ToolExecutionContext = {},
   ): Promise<ToolExecutionResult[]> {
-    return Promise.all(toolCalls.map((tc) => this.executeToolCall(tc, ctx)));
+    const limit = this.maxConcurrency;
+    if (!limit || limit >= toolCalls.length) {
+      return Promise.all(toolCalls.map((tc) => this.executeToolCall(tc, ctx)));
+    }
+
+    const results = new Array<ToolExecutionResult>(toolCalls.length);
+    let nextIndex = 0;
+    const worker = async (): Promise<void> => {
+      for (let i = nextIndex++; i < toolCalls.length; i = nextIndex++) {
+        results[i] = await this.executeToolCall(toolCalls[i] as ToolCall, ctx);
+      }
+    };
+    await Promise.all(Array.from({ length: limit }, () => worker()));
+    return results;
+  }
+
+  private async runWithTimeout<TParams>(
+    tool: Tool<TParams, unknown>,
+    params: TParams,
+    ctx: ToolExecutionContext,
+    toolName: string,
+  ): Promise<unknown> {
+    const timeoutMs = tool.timeoutMs ?? this.defaultTimeoutMs;
+    if (!timeoutMs || timeoutMs <= 0) {
+      return tool.execute(params, ctx);
+    }
+
+    const controller = new AbortController();
+    const onParentAbort = (): void => controller.abort(ctx.signal?.reason);
+    if (ctx.signal) {
+      if (ctx.signal.aborted) {
+        controller.abort(ctx.signal.reason);
+      } else {
+        ctx.signal.addEventListener('abort', onParentAbort, { once: true });
+      }
+    }
+
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+
+    try {
+      const executePromise = Promise.resolve(
+        tool.execute(params, { ...ctx, signal: controller.signal }),
+      );
+      // Prevent an unhandled rejection if the tool's promise loses the race and later
+      // rejects; the tool remains responsible for actually stopping its own work via
+      // `signal` since JS cannot forcibly cancel work already in flight.
+      executePromise.catch(() => undefined);
+
+      const abortRejection = (): Error =>
+        timedOut
+          ? new OllamaToolTimeoutError(`Tool "${toolName}" timed out after ${timeoutMs}ms`, {
+              toolName,
+              timeoutMs,
+            })
+          : ((ctx.signal?.reason as Error | undefined) ?? new Error('Tool execution aborted'));
+
+      return await Promise.race([
+        executePromise,
+        controller.signal.aborted
+          ? Promise.reject(abortRejection())
+          : new Promise<never>((_resolve, reject) => {
+              controller.signal.addEventListener('abort', () => reject(abortRejection()), {
+                once: true,
+              });
+            }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      if (ctx.signal) {
+        ctx.signal.removeEventListener('abort', onParentAbort);
+      }
+    }
+  }
+
+  private truncateOutput(output: string): string {
+    const limit = this.maxOutputChars;
+    if (!limit || output.length <= limit) {
+      return output;
+    }
+    return `${output.slice(0, limit)}\n… [truncated ${output.length - limit} of ${output.length} chars]`;
   }
 
   private handleExecutionError(error: Error, toolCall: ToolCall): ToolExecutionResult {
@@ -96,7 +216,7 @@ export class ToolRegistry {
       toolName: toolCall.function.name,
       success: false,
       error,
-      outputString: fallbackMessage,
+      outputString: this.truncateOutput(fallbackMessage),
     };
   }
 }

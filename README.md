@@ -124,7 +124,7 @@ const weatherTool = defineTool({
 });
 
 const registry = new ToolRegistry([weatherTool]);
-const agent = new Agent(client, { tools: registry, maxTurns: 5 });
+const agent = new Agent(client, { tools: registry, maxIterations: 5 });
 
 const response = await agent.run({
   model: 'qwen3.5:2b',
@@ -133,6 +133,44 @@ const response = await agent.run({
 
 console.log(response.finalMessage.content);
 ```
+
+### Tool Execution Safety & Sandboxing
+
+Tool arguments and, indirectly, which tools get called at all are driven by model
+output — treat them as untrusted input. `ToolRegistry` supports three defensive
+controls, all opt-in (disabled by default, matching prior behavior) so existing agents
+aren't affected until you turn them on:
+
+```typescript
+const registry = new ToolRegistry({
+  tools: [weatherTool],
+  // Fail a call that runs longer than this instead of stalling the agent loop forever.
+  // Override per-tool via `defineTool({ ..., timeoutMs: 2_000 })`.
+  timeoutMs: 10_000,
+  // Cap how many tool calls run in parallel when the model requests several at once.
+  maxConcurrency: 4,
+  // Truncate oversized tool output before it re-enters the conversation history.
+  maxOutputChars: 20_000,
+});
+```
+
+- **`timeoutMs`** races the tool call against a timer and rejects with
+  `OllamaToolTimeoutError` on expiry. Enforcement is cooperative: it stops the *agent*
+  from waiting indefinitely, but genuinely halting a tool's in-flight work still
+  requires the tool itself to check `ToolExecutionContext.signal` (which the registry
+  aborts on timeout) — plain synchronous or non-abort-aware async code cannot be
+  force-killed from the same thread. See [ADR 0004](./docs/adr/0004-tool-execution-sandboxing.md)
+  for the full rationale and what a stronger guarantee would require.
+- **`maxConcurrency`** bounds parallel execution instead of the previous unconditional
+  `Promise.all`, so a model requesting dozens of simultaneous tool calls can't exhaust
+  connection pools, rate limits, or memory all at once.
+- **`maxOutputChars`** truncates `outputString` (what gets fed back into the
+  conversation) while leaving the untruncated value on `result.result` for callers who
+  need it — bounding how much a single tool call can inflate context size or memory.
+- Zod's `safeParse` already validates every tool call's arguments against its schema
+  before `execute` runs (`OllamaToolValidationError` on mismatch). By default, Zod
+  objects silently strip unrecognized keys rather than rejecting them; call `.strict()`
+  on a tool's schema if you need to reject unexpected extra arguments outright.
 
 ### Web Standard Streams & Next.js Integration
 

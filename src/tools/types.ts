@@ -20,6 +20,11 @@ export interface Tool<TParams = Record<string, unknown>, TResult = unknown> {
   readonly schema: z.ZodType<TParams>;
   readonly execute: ToolHandler<TParams, TResult>;
   readonly definition: ToolDefinition;
+  /**
+   * Per-tool execution timeout in milliseconds, overriding the registry's default.
+   * Pass `0` to explicitly disable timeout enforcement for this tool.
+   */
+  readonly timeoutMs?: number | undefined;
 }
 
 export interface ToolExecutionSuccess {
