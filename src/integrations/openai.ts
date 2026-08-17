@@ -11,12 +11,19 @@ export interface OpenAIMessage {
   readonly name?: string | undefined;
 }
 
+export interface OpenAIStreamOptions {
+  /** Emit a final SSE chunk carrying `usage` (prompt/completion/total tokens) before `[DONE]`. */
+  readonly include_usage?: boolean | undefined;
+}
+
 export interface OpenAIChatCompletionRequest {
   readonly model: string;
   readonly messages: readonly OpenAIMessage[];
   readonly temperature?: number | undefined;
   readonly top_p?: number | undefined;
   readonly stream?: boolean | undefined;
+  /** Only meaningful when `stream: true`; ignored otherwise. */
+  readonly stream_options?: OpenAIStreamOptions | undefined;
   readonly max_tokens?: number | undefined;
   readonly stop?: readonly string[] | undefined;
   readonly presence_penalty?: number | undefined;

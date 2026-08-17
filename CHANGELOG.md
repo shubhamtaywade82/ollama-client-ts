@@ -32,13 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Architecture Decision Records:** `docs/adr/` documents the rationale behind the circuit breaker failure model, the dual ESM/CJS packaging strategy, Zod v3/v4 dual support, the tool execution sandboxing model, and OpenTelemetry instrumentation.
 - **OpenTelemetry Instrumentation:** Automatic spans (`@opentelemetry/api` is an optional peer dependency, a no-op when absent or unconfigured) for HTTP requests, endpoint failover attempts, non-streaming `chat`/`generate` calls (using the Gen AI semantic conventions, including token usage), and `Agent` runs (`invoke_agent` → `ollama.agent.turn` → `execute_tool`). See [ADR 0005](./docs/adr/0005-opentelemetry-instrumentation.md).
 - **Protocol Compatibility Bridges:**
-  - OpenAI compatibility bridge (`/v1/chat/completions`, `/v1/models`).
-  - Anthropic compatibility bridge (`/v1/messages`).
+  - OpenAI compatibility bridge (`/v1/chat/completions`, `/v1/models`), including `stream_options.include_usage` typing for streamed token accounting.
+  - Anthropic compatibility bridge (`/v1/messages`), including `cache_control` typing on content blocks for prompt caching.
+- **Environment Variable Fallbacks:** `OllamaClient`'s default single-endpoint `baseUrl`/`apiKey` fall back to `OLLAMA_HOST`/`OLLAMA_API_KEY` (the same variables the official `ollama` CLI and client libraries read) when not passed explicitly, matching the convention of other major LLM SDKs. Guarded to remain a no-op (not a `ReferenceError`) on Edge runtimes where `process` doesn't exist. Explicit `config.baseUrl`/`config.apiKey`, and any use of `config.endpoints`, always take precedence.
 - **Web Standard Stream Adapters:**
   - `toTextStream`, `toDataStream`, and `toResponse` for direct integration with Next.js, Vercel AI SDK, and Web standard streams.
 - **Skills System:**
   - Frontmatter parser for `SKILL.md` documents.
   - Skill composition and prompt injection into system messages (`applySkill`).
+- **Documentation Hygiene:** `OllamaClient.embeddings()` is now marked `@deprecated` (Ollama's `/api/embeddings` was superseded by `/api/embed`, exposed as `embed()`). `ToolCall`, `Agent`, and `ToolRegistry.executeToolCalls` now document why tool execution is ordered/concurrency-bounded rather than ID-correlated: Ollama's native tool-calling protocol has no OpenAI-style `tool_call_id`.
 - **Testing & Quality Assurance:**
   - 4-tier test architecture: Unit, Integration, Functional, and Behavioral testing (50 tests).
   - VCR record and replay harness with real cassettes generated against `qwen3.5:2b` and `nomic-embed-text:latest`.

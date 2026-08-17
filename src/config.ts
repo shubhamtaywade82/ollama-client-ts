@@ -11,6 +11,32 @@ import type { EndpointRegistryOptions, OllamaEndpoint } from './providers/endpoi
 export const DEFAULT_BASE_URL = 'http://localhost:11434';
 export const DEFAULT_TIMEOUT_MS = 30_000;
 
+/**
+ * Reads a process environment variable, if any. Guarded with `typeof process` rather
+ * than importing `node:process` so this stays safe to call from Edge Runtimes (Cloudflare
+ * Workers, Vercel Edge) where `process` doesn't exist — it just returns `undefined` there.
+ */
+function readEnv(name: string): string | undefined {
+  return typeof process !== 'undefined' && process.env ? process.env[name] : undefined;
+}
+
+/**
+ * Resolves the default single-endpoint `baseUrl`, falling back to the `OLLAMA_HOST`
+ * environment variable (the same one the official `ollama` CLI and client libraries
+ * read) before `DEFAULT_BASE_URL`. Explicit `config.baseUrl` always wins.
+ */
+export function resolveBaseUrl(configBaseUrl?: string | undefined): string {
+  return configBaseUrl ?? readEnv('OLLAMA_HOST') ?? DEFAULT_BASE_URL;
+}
+
+/**
+ * Resolves the default single-endpoint `apiKey`, falling back to the `OLLAMA_API_KEY`
+ * environment variable before leaving it unset. Explicit `config.apiKey` always wins.
+ */
+export function resolveApiKey(configApiKey?: string | undefined): string | undefined {
+  return configApiKey ?? readEnv('OLLAMA_API_KEY');
+}
+
 export const DEFAULT_FAILOVER_CODES: readonly string[] = [
   'network_error',
   'timeout',
@@ -20,9 +46,17 @@ export const DEFAULT_FAILOVER_CODES: readonly string[] = [
 ];
 
 export interface OllamaClientConfig {
-  /** Base URL of a single Ollama server. Ignored if `endpoints` is provided. Defaults to `http://localhost:11434`. */
+  /**
+   * Base URL of a single Ollama server. Ignored if `endpoints` is provided. Falls back to
+   * the `OLLAMA_HOST` environment variable (when set and running under Node), then
+   * `http://localhost:11434`.
+   */
   readonly baseUrl?: string;
-  /** Bearer token sent as `Authorization: Bearer <apiKey>` for a single-endpoint setup. */
+  /**
+   * Bearer token sent as `Authorization: Bearer <apiKey>` for a single-endpoint setup.
+   * Falls back to the `OLLAMA_API_KEY` environment variable (when set and running under
+   * Node).
+   */
   readonly apiKey?: string;
   /** Static headers merged into every request. */
   readonly headers?: Record<string, string>;
