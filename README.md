@@ -293,21 +293,22 @@ real Edge Runtime sandbox exposing only Web Standard globals. See
 Every failure thrown by the client is an `OllamaClientError` subclass, so you can catch the base
 class or narrow to a specific `code`:
 
-| Class                           | `code`                          | `retryable` | Thrown when                                                                                        |
-| ------------------------------- | ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
-| `OllamaNetworkError`            | `network_error`                 | `true`      | The request failed before a response was received (DNS, connection refused, etc).                  |
-| `OllamaTimeoutError`            | `timeout`                       | `true`      | The request exceeded `timeoutMs`.                                                                  |
-| `OllamaAuthError`               | `auth_error`                    | `false`     | The endpoint returned `401`/`403`.                                                                 |
-| `OllamaNotFoundError`           | `not_found`                     | `false`     | The endpoint returned `404` (e.g. unknown model).                                                  |
-| `OllamaRateLimitError`          | `rate_limited`                  | `true`      | The endpoint returned `429`.                                                                       |
-| `OllamaServerError`             | `server_error`                  | `true`      | The endpoint returned `5xx`.                                                                       |
-| `OllamaAbortError`              | `aborted`                       | `false`     | The request was cancelled via `AbortSignal`.                                                       |
-| `OllamaToolValidationError`     | `tool_validation_error`         | `false`     | A tool call's arguments, or a `chatWithSchema`/`generateWithSchema` result, failed Zod validation. |
-| `OllamaAgentMaxIterationsError` | `agent_max_iterations_exceeded` | `false`     | An `Agent` run exceeded `maxTurns` without producing a final answer.                               |
-| `OllamaMcpError`                | `mcp_error`                     | varies      | An MCP `listTools`/`callTool` call failed.                                                         |
-| `OllamaSkillNotFoundError`      | `skill_not_found`               | `false`     | `applySkill` referenced a skill that isn't registered.                                             |
-| `OllamaSkillInvalidError`       | `skill_invalid`                 | `false`     | A skill's frontmatter or contents failed to parse.                                                 |
-| `OllamaGenericClientError`      | `client_error`                  | `false`     | Any other non-2xx response not covered above.                                                      |
+| Class                              | `code`                          | `retryable` | Thrown when                                                                                                                                                                                                                                              |
+| ---------------------------------- | ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OllamaNetworkError`               | `network_error`                 | `true`      | The request failed before a response was received (DNS, connection refused, etc).                                                                                                                                                                        |
+| `OllamaTimeoutError`               | `timeout`                       | `true`      | The request exceeded `timeoutMs`.                                                                                                                                                                                                                        |
+| `OllamaAuthError`                  | `auth_error`                    | `false`     | The endpoint returned `401`/`403`.                                                                                                                                                                                                                       |
+| `OllamaNotFoundError`              | `not_found`                     | `false`     | The endpoint returned `404` (e.g. unknown model).                                                                                                                                                                                                        |
+| `OllamaRateLimitError`             | `rate_limited`                  | `true`      | The endpoint returned `429`.                                                                                                                                                                                                                             |
+| `OllamaServerError`                | `server_error`                  | `true`      | The endpoint returned `5xx`.                                                                                                                                                                                                                             |
+| `OllamaAbortError`                 | `aborted`                       | `false`     | The request was cancelled via `AbortSignal`.                                                                                                                                                                                                             |
+| `OllamaToolValidationError`        | `tool_validation_error`         | `false`     | A tool call's arguments, or a `chatWithSchema`/`generateWithSchema` result, failed Zod validation.                                                                                                                                                       |
+| `OllamaUnsupportedCapabilityError` | `unsupported_capability`        | `false`     | A `format` (structured output) request was made against an endpoint inferred as Ollama Cloud, which doesn't currently support it. Thrown before any network call; in `DEFAULT_FAILOVER_CODES`, so a multi-endpoint setup tries the next candidate first. |
+| `OllamaAgentMaxIterationsError`    | `agent_max_iterations_exceeded` | `false`     | An `Agent` run exceeded `maxTurns` without producing a final answer.                                                                                                                                                                                     |
+| `OllamaMcpError`                   | `mcp_error`                     | varies      | An MCP `listTools`/`callTool` call failed.                                                                                                                                                                                                               |
+| `OllamaSkillNotFoundError`         | `skill_not_found`               | `false`     | `applySkill` referenced a skill that isn't registered.                                                                                                                                                                                                   |
+| `OllamaSkillInvalidError`          | `skill_invalid`                 | `false`     | A skill's frontmatter or contents failed to parse.                                                                                                                                                                                                       |
+| `OllamaGenericClientError`         | `client_error`                  | `false`     | Any other non-2xx response not covered above.                                                                                                                                                                                                            |
 
 All subclasses carry `status`, `retryable`, and optional `request`/`response` context, and preserve
 the original error via the standard `cause` property:
@@ -338,7 +339,7 @@ observe per-endpoint circuit state directly.
 
 ## Testing
 
-The test suite contains 87 automated tests across 4 testing tiers:
+The test suite contains 93 automated tests across 4 testing tiers:
 
 ```bash
 # Run unit, integration, and functional test suite

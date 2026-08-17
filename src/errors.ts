@@ -142,6 +142,25 @@ export class OllamaToolTimeoutError extends OllamaClientError {
   }
 }
 
+/**
+ * Thrown client-side, before a network request is made, when a request asks for a
+ * capability an endpoint is known not to support (e.g. structured output `format` against
+ * an Ollama Cloud endpoint — see `ModelCapabilities.supportsStructuredOutputRequest` in
+ * `src/capabilities/capabilities.ts`). Its `code` is included in `DEFAULT_FAILOVER_CODES`
+ * by default, so in a multi-endpoint setup it causes failover to the next candidate rather
+ * than failing outright — it only surfaces to the caller if every candidate is rejected.
+ */
+export class OllamaUnsupportedCapabilityError extends OllamaClientError {
+  readonly capability: string;
+  constructor(
+    message: string,
+    options: Omit<OllamaClientErrorOptions, 'code' | 'retryable'> & { capability: string },
+  ) {
+    super(message, { ...options, code: 'unsupported_capability', retryable: false });
+    this.capability = options.capability;
+  }
+}
+
 export class OllamaAgentMaxIterationsError extends OllamaClientError {
   readonly maxIterations: number;
   constructor(

@@ -11,7 +11,7 @@ import {
   resolveBaseUrl,
   type OllamaClientConfig,
 } from './config.js';
-import { OllamaClientError } from './errors.js';
+import { OllamaClientError, OllamaUnsupportedCapabilityError } from './errors.js';
 import { createConsoleLogger, NOOP_LOGGER, type Logger } from './logger.js';
 import { EndpointRegistry, type EndpointHealth } from './providers/endpoint-registry.js';
 import { checkEndpointHealth, type EndpointHealthCheckResult } from './providers/health-check.js';
@@ -100,6 +100,24 @@ export class OllamaClient {
     return this.models;
   }
 
+  /**
+   * Fail-fast guard for `format` (structured output) requests: throws before any network
+   * call if the candidate endpoint is inferred as Ollama Cloud, which does not currently
+   * support structured outputs (see `ModelCapabilities.supportsStructuredOutputRequest`).
+   * `unsupported_capability` is in `DEFAULT_FAILOVER_CODES`, so in a multi-endpoint setup
+   * this causes failover to the next candidate rather than failing the whole request.
+   */
+  private assertStructuredOutputSupported(baseUrl: string, model: string): void {
+    if (inferRuntimeMode(baseUrl) === 'cloud') {
+      throw new OllamaUnsupportedCapabilityError(
+        `Structured output ("format") requests are not supported against Ollama Cloud ` +
+          `endpoints (model "${model}" via ${baseUrl}). This is a known Ollama Cloud ` +
+          `limitation, not a bug in this SDK.`,
+        { capability: 'structuredOutputRequest' },
+      );
+    }
+  }
+
   async executeWithFailover<T>(
     operation: (http: HttpClient, signal: AbortSignal) => Promise<T>,
     options?: { signal?: AbortSignal | undefined; timeoutMs?: number | undefined },
@@ -157,6 +175,7 @@ export class OllamaClient {
   ): Promise<ChatResponse | OllamaStream<ChatResponse, ChatStreamResult>> {
     if (req.stream) {
       return this.executeWithFailover(async (http, signal) => {
+        if (req.format !== undefined) this.assertStructuredOutputSupported(http.baseUrl, req.model);
         const stream = await http.requestStream<ChatResponse>({
           path: '/api/chat',
           body: { ...req, stream: true },
@@ -173,15 +192,15 @@ export class OllamaClient {
         [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
       },
       async (span) => {
-        const rawRes = await this.executeWithFailover(
-          (http, signal) =>
-            http.request<ChatResponse>({
-              path: '/api/chat',
-              body: { ...req, stream: false },
-              signal,
-            }),
-          req,
-        );
+        const rawRes = await this.executeWithFailover((http, signal) => {
+          if (req.format !== undefined)
+            this.assertStructuredOutputSupported(http.baseUrl, req.model);
+          return http.request<ChatResponse>({
+            path: '/api/chat',
+            body: { ...req, stream: false },
+            signal,
+          });
+        }, req);
         const toolCalls = ensureToolCallIds(rawRes.message.tool_calls);
         const res: ChatResponse =
           toolCalls === rawRes.message.tool_calls
@@ -233,6 +252,7 @@ export class OllamaClient {
   ): Promise<GenerateResponse | OllamaStream<GenerateResponse, GenerateStreamResult>> {
     if (req.stream) {
       return this.executeWithFailover(async (http, signal) => {
+        if (req.format !== undefined) this.assertStructuredOutputSupported(http.baseUrl, req.model);
         const stream = await http.requestStream<GenerateResponse>({
           path: '/api/generate',
           body: { ...req, stream: true },
@@ -249,15 +269,15 @@ export class OllamaClient {
         [ATTR_GEN_AI_REQUEST_MODEL]: req.model,
       },
       async (span) => {
-        const res = await this.executeWithFailover(
-          (http, signal) =>
-            http.request<GenerateResponse>({
-              path: '/api/generate',
-              body: { ...req, stream: false },
-              signal,
-            }),
-          req,
-        );
+        const res = await this.executeWithFailover((http, signal) => {
+          if (req.format !== undefined)
+            this.assertStructuredOutputSupported(http.baseUrl, req.model);
+          return http.request<GenerateResponse>({
+            path: '/api/generate',
+            body: { ...req, stream: false },
+            signal,
+          });
+        }, req);
         span?.setAttributes({
           [ATTR_GEN_AI_RESPONSE_MODEL]: res.model,
           ...(res.prompt_eval_count !== undefined
