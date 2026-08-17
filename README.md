@@ -237,6 +237,14 @@ const health = await client.healthCheck();
 console.log(health);
 ```
 
+Failover applies to inference calls (`chat`, `generate`, `embed`, `embeddings`,
+`webSearch`, `webFetch`) — a different endpoint serving the same model is a genuine
+substitute for those. Model/blob management (`listModels`, `pullModel`, `deleteModel`,
+etc.) and `capabilities()` target one specific endpoint's local state and deliberately do
+**not** fail over to a different candidate: retrying `deleteModel` against a different
+server doesn't retry the same operation, it silently acts on a different model catalog.
+See [ADR 0008](./docs/adr/0008-endpoint-failover-scope.md).
+
 ---
 
 ### Observability with OpenTelemetry
@@ -339,7 +347,7 @@ observe per-endpoint circuit state directly.
 
 ## Testing
 
-The test suite contains 93 automated tests across 4 testing tiers:
+The test suite contains 100 automated tests across 4 testing tiers:
 
 ```bash
 # Run unit, integration, and functional test suite

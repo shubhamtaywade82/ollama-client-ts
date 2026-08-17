@@ -120,11 +120,24 @@ export class OllamaClient {
 
   async executeWithFailover<T>(
     operation: (http: HttpClient, signal: AbortSignal) => Promise<T>,
-    options?: { signal?: AbortSignal | undefined; timeoutMs?: number | undefined },
+    options?: {
+      signal?: AbortSignal | undefined;
+      timeoutMs?: number | undefined;
+      /**
+       * Disables cross-endpoint failover: only the single best candidate endpoint is
+       * tried (same-endpoint retry via `withRetry` still applies). For operations whose
+       * target IS the endpoint — model catalog/blob management — a different endpoint
+       * isn't an interchangeable substitute, so failing over to one would silently
+       * operate on the wrong server's state rather than retrying "the same" request. See
+       * ADR 0008. Defaults to `false`, preserving normal failover for inference calls.
+       */
+      singleEndpoint?: boolean | undefined;
+    },
   ): Promise<T> {
     const timeout = createTimeoutSignal(options?.timeoutMs ?? this.timeoutMs, options?.signal);
     try {
-      const candidates = this.registry.candidates();
+      const allCandidates = this.registry.candidates();
+      const candidates = options?.singleEndpoint ? allCandidates.slice(0, 1) : allCandidates;
       let lastError: Error | undefined;
 
       for (const [attemptIndex, endpoint] of candidates.entries()) {
@@ -371,7 +384,9 @@ export class OllamaClient {
 
   // --- Capabilities & Health ---
   capabilities(model: string): Promise<ModelCapabilities> {
-    return this.executeWithFailover((http) => detectModelCapabilities(http, model));
+    return this.executeWithFailover((http) => detectModelCapabilities(http, model), {
+      singleEndpoint: true,
+    });
   }
   runtimeMode(): RuntimeMode {
     const ep = this.registry.candidates()[0];

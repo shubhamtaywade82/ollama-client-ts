@@ -24,20 +24,32 @@ import type {
 
 export type RequestRunner = <T>(
   op: (http: HttpClient, signal: AbortSignal) => Promise<T>,
-  opts?: { signal?: AbortSignal | undefined; timeoutMs?: number | undefined },
+  opts?: {
+    signal?: AbortSignal | undefined;
+    timeoutMs?: number | undefined;
+    singleEndpoint?: boolean | undefined;
+  },
 ) => Promise<T>;
 
+/**
+ * Every operation here targets one specific Ollama server's local model catalog or blob
+ * store — unlike `chat`/`generate`/`embed`, a different endpoint isn't an interchangeable
+ * substitute; it's a different catalog/store entirely. `singleEndpoint: true` disables
+ * `OllamaClient`'s cross-endpoint failover for these calls (same-endpoint retry via
+ * `withRetry` still applies), so a multi-endpoint setup never silently lists/mutates the
+ * wrong server just because the intended one had a transient failure. See ADR 0008.
+ */
 export class ModelsClient {
   constructor(private readonly runner: RequestRunner) {}
 
   list(): Promise<ModelResponse[]> {
-    return this.runner((http) => listAvailableModels(http));
+    return this.runner((http) => listAvailableModels(http), { singleEndpoint: true });
   }
 
   show(request: ShowRequestOptions): Promise<ShowResponse> {
     return this.runner(
       (http, signal) => http.request<ShowResponse>({ path: '/api/show', body: request, signal }),
-      request,
+      { ...request, singleEndpoint: true },
     );
   }
 
@@ -52,14 +64,17 @@ export class ModelsClient {
     request: PullRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
     if (request.stream) {
-      return this.runner(async (http, signal) => {
-        const stream = await http.requestStream<ProgressResponse>({
-          path: '/api/pull',
-          body: { ...request, stream: true },
-          signal,
-        });
-        return normalizeProgressStream(stream);
-      }, request);
+      return this.runner(
+        async (http, signal) => {
+          const stream = await http.requestStream<ProgressResponse>({
+            path: '/api/pull',
+            body: { ...request, stream: true },
+            signal,
+          });
+          return normalizeProgressStream(stream);
+        },
+        { ...request, singleEndpoint: true },
+      );
     }
     return this.runner(
       (http, signal) =>
@@ -68,7 +83,7 @@ export class ModelsClient {
           body: { ...request, stream: false },
           signal,
         }),
-      request,
+      { ...request, singleEndpoint: true },
     );
   }
 
@@ -83,14 +98,17 @@ export class ModelsClient {
     request: PushRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
     if (request.stream) {
-      return this.runner(async (http, signal) => {
-        const stream = await http.requestStream<ProgressResponse>({
-          path: '/api/push',
-          body: { ...request, stream: true },
-          signal,
-        });
-        return normalizeProgressStream(stream);
-      }, request);
+      return this.runner(
+        async (http, signal) => {
+          const stream = await http.requestStream<ProgressResponse>({
+            path: '/api/push',
+            body: { ...request, stream: true },
+            signal,
+          });
+          return normalizeProgressStream(stream);
+        },
+        { ...request, singleEndpoint: true },
+      );
     }
     return this.runner(
       (http, signal) =>
@@ -99,7 +117,7 @@ export class ModelsClient {
           body: { ...request, stream: false },
           signal,
         }),
-      request,
+      { ...request, singleEndpoint: true },
     );
   }
 
@@ -114,14 +132,17 @@ export class ModelsClient {
     request: CreateRequestOptions,
   ): Promise<ProgressResponse | OllamaStream<ProgressResponse, ProgressStreamResult>> {
     if (request.stream) {
-      return this.runner(async (http, signal) => {
-        const stream = await http.requestStream<ProgressResponse>({
-          path: '/api/create',
-          body: { ...request, stream: true },
-          signal,
-        });
-        return normalizeProgressStream(stream);
-      }, request);
+      return this.runner(
+        async (http, signal) => {
+          const stream = await http.requestStream<ProgressResponse>({
+            path: '/api/create',
+            body: { ...request, stream: true },
+            signal,
+          });
+          return normalizeProgressStream(stream);
+        },
+        { ...request, singleEndpoint: true },
+      );
     }
     return this.runner(
       (http, signal) =>
@@ -130,7 +151,7 @@ export class ModelsClient {
           body: { ...request, stream: false },
           signal,
         }),
-      request,
+      { ...request, singleEndpoint: true },
     );
   }
 
@@ -143,46 +164,53 @@ export class ModelsClient {
           body: request,
           signal,
         }),
-      request,
+      { ...request, singleEndpoint: true },
     );
   }
 
   copy(request: CopyRequestOptions): Promise<StatusResponse> {
     return this.runner(
       (http, signal) => http.request<StatusResponse>({ path: '/api/copy', body: request, signal }),
-      request,
+      { ...request, singleEndpoint: true },
     );
   }
 
   ps(): Promise<PsResponse> {
-    return this.runner((http) => http.request<PsResponse>({ path: '/api/ps', method: 'GET' }));
+    return this.runner((http) => http.request<PsResponse>({ path: '/api/ps', method: 'GET' }), {
+      singleEndpoint: true,
+    });
   }
 
   version(): Promise<VersionResponse> {
-    return this.runner((http) =>
-      http.request<VersionResponse>({ path: '/api/version', method: 'GET' }),
+    return this.runner(
+      (http) => http.request<VersionResponse>({ path: '/api/version', method: 'GET' }),
+      { singleEndpoint: true },
     );
   }
 
   async createBlob(digest: string, data: BinaryBody): Promise<void> {
-    await this.runner((http, signal) =>
-      http.request<void>({
-        path: `/api/blobs/${encodeURIComponent(digest)}`,
-        method: 'POST',
-        rawBody: data,
-        signal,
-      }),
+    await this.runner(
+      (http, signal) =>
+        http.request<void>({
+          path: `/api/blobs/${encodeURIComponent(digest)}`,
+          method: 'POST',
+          rawBody: data,
+          signal,
+        }),
+      { singleEndpoint: true },
     );
   }
 
   async checkBlob(digest: string): Promise<boolean> {
     try {
-      await this.runner((http, signal) =>
-        http.request<void>({
-          path: `/api/blobs/${encodeURIComponent(digest)}`,
-          method: 'HEAD',
-          signal,
-        }),
+      await this.runner(
+        (http, signal) =>
+          http.request<void>({
+            path: `/api/blobs/${encodeURIComponent(digest)}`,
+            method: 'HEAD',
+            signal,
+          }),
+        { singleEndpoint: true },
       );
       return true;
     } catch {
