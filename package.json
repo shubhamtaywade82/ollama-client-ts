@@ -1,6 +1,6 @@
 {
   "name": "@shubhamtaywade82/ollama-client-ts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Production-grade TypeScript SDK for Ollama with native fetch, high availability failover, multi-turn tool calling, structured outputs, reasoning stream tokens, OpenAI/Anthropic bridges, MCP, and Web Stream adapters.",
   "keywords": [
     "ollama",
@@ -86,7 +86,7 @@
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
     "prepare": "npm run build",
-    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

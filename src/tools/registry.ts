@@ -14,10 +14,10 @@ import {
   ATTR_GEN_AI_TOOL_CALL_ID,
 } from '../telemetry/index.js';
 import type { ToolCall, ToolDefinition } from '../types.js';
-import type { Tool, ToolExecutionContext, ToolExecutionResult } from './types.js';
+import type { AnyTool, Tool, ToolExecutionContext, ToolExecutionResult } from './types.js';
 
 export interface ToolRegistryOptions {
-  readonly tools?: readonly Tool<never, unknown>[] | undefined;
+  readonly tools?: readonly AnyTool[] | undefined;
   readonly onError?: ((error: Error, toolCall: ToolCall) => string) | undefined;
   /**
    * Default per-call execution timeout in milliseconds, applied to any tool that
@@ -46,13 +46,13 @@ export interface ToolRegistryOptions {
 }
 
 export class ToolRegistry {
-  private readonly tools = new Map<string, Tool<never, unknown>>();
+  private readonly tools = new Map<string, AnyTool>();
   private readonly onError?: ((error: Error, toolCall: ToolCall) => string) | undefined;
   private readonly defaultTimeoutMs?: number | undefined;
   private readonly maxConcurrency?: number | undefined;
   private readonly maxOutputChars?: number | undefined;
 
-  constructor(toolsOrOptions?: readonly Tool<never, unknown>[] | ToolRegistryOptions | undefined) {
+  constructor(toolsOrOptions?: readonly AnyTool[] | ToolRegistryOptions | undefined) {
     if (Array.isArray(toolsOrOptions)) {
       this.registerMany(toolsOrOptions);
     } else if (toolsOrOptions !== undefined) {
@@ -67,19 +67,19 @@ export class ToolRegistry {
     }
   }
 
-  register(tool: Tool<never, unknown>): this {
+  register(tool: AnyTool): this {
     this.tools.set(tool.name, tool);
     return this;
   }
 
-  registerMany(tools: readonly Tool<never, unknown>[]): this {
+  registerMany(tools: readonly AnyTool[]): this {
     for (const tool of tools) {
       this.register(tool);
     }
     return this;
   }
 
-  get(name: string): Tool<never, unknown> | undefined {
+  get(name: string): AnyTool | undefined {
     return this.tools.get(name);
   }
 

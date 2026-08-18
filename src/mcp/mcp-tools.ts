@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { OllamaMcpError } from '../errors.js';
-import type { Tool } from '../tools/types.js';
+import type { AnyTool } from '../tools/types.js';
 import type { ToolRegistry } from '../tools/registry.js';
 import type { McpClientLike, McpToolDescriptor } from './types.js';
 import type { ToolProperty } from '../types.js';
@@ -17,7 +17,7 @@ function convertMcpDescriptorToTool(
   descriptor: McpToolDescriptor,
   mcpClient: McpClientLike,
   namePrefix = '',
-): Tool<never, unknown> {
+): AnyTool {
   const toolName = `${namePrefix}${descriptor.name}`;
   const inputSchema = descriptor.inputSchema ?? { type: 'object', properties: {} };
   const properties = (inputSchema['properties'] ?? {}) as Record<string, ToolProperty>;
@@ -26,7 +26,7 @@ function convertMcpDescriptorToTool(
   return {
     name: toolName,
     description: descriptor.description ?? '',
-    schema: z.record(z.string(), z.unknown()) as unknown as z.ZodType<never>,
+    schema: z.record(z.string(), z.unknown()),
     execute: async (args: Record<string, unknown>) => {
       try {
         const result = await mcpClient.callTool({
@@ -71,7 +71,7 @@ function convertMcpDescriptorToTool(
 export async function loadMcpTools(
   mcpClient: McpClientLike,
   options: LoadMcpToolsOptions = {},
-): Promise<Tool<never, unknown>[]> {
+): Promise<AnyTool[]> {
   try {
     const { tools } = await mcpClient.listTools();
     return tools.map((t) => convertMcpDescriptorToTool(t, mcpClient, options.namePrefix));

@@ -1,0 +1,15 @@
+{
+  // Type-checks EVERYTHING, not just `src/`. `tsconfig.json` scopes itself to `src/` so
+  // declaration emit and editor tooling stay focused on shipped code, but that left
+  // `test/`, `bench/`, and `scripts/` completely unchecked: Vitest transforms TypeScript
+  // with esbuild, which strips types WITHOUT verifying them, so a type error in a test
+  // never failed anything. That blind spot hid a real public-API defect (a `ToolRegistry`
+  // constructor signature no concrete `defineTool` result could satisfy — the tests had
+  // silently papered over it with `as never` casts). `npm run typecheck` uses this config
+  // so that can't happen again.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*", "test/**/*", "bench/**/*", "scripts/**/*"]
+}

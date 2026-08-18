@@ -29,7 +29,7 @@ describe('Tools & ToolRegistry', () => {
 
   it('executes tool call with valid args', async () => {
     const registry = new ToolRegistry();
-    registry.register(addTool as never);
+    registry.register(addTool);
 
     const result = await registry.executeToolCall({
       function: {
@@ -47,7 +47,7 @@ describe('Tools & ToolRegistry', () => {
 
   it('returns failure on invalid schema args', async () => {
     const registry = new ToolRegistry();
-    registry.register(addTool as never);
+    registry.register(addTool);
 
     const result = await registry.executeToolCall({
       function: {
