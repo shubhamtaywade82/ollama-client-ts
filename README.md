@@ -1,7 +1,7 @@
-# @shubhamtaywade82/ollama-client-ts
+# @nemesis-oss/ollama-sdk
 
-[![CI](https://github.com/shubhamtaywade82/ollama-client-ts/actions/workflows/ci.yml/badge.svg)](https://github.com/shubhamtaywade82/ollama-client-ts/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@shubhamtaywade82/ollama-client-ts.svg)](https://www.npmjs.com/package/@shubhamtaywade82/ollama-client-ts)
+[![CI](https://github.com/nemesis-oss/ollama-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/nemesis-oss/ollama-sdk/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@nemesis-oss/ollama-sdk.svg)](https://www.npmjs.com/package/@nemesis-oss/ollama-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 > Production-grade TypeScript SDK for Ollama. Built with native fetch, high availability failover, multi-turn tool calling, structured outputs with Zod, reasoning stream tokens, OpenAI & Anthropic compatibility bridges, MCP integration, and Web Stream adapters.
@@ -27,7 +27,7 @@
 ## Installation
 
 ```bash
-npm install @shubhamtaywade82/ollama-client-ts zod
+npm install @nemesis-oss/ollama-sdk zod
 ```
 
 `zod` is a peer dependency (`^3.22.0 || ^4.0.0`) — install whichever major version your project already uses instead of getting a second copy bundled in.
@@ -39,7 +39,7 @@ npm install @shubhamtaywade82/ollama-client-ts zod
 ### Basic Chat & Completion
 
 ```typescript
-import { OllamaClient } from '@shubhamtaywade82/ollama-client-ts';
+import { OllamaClient } from '@nemesis-oss/ollama-sdk';
 
 const client = new OllamaClient();
 
@@ -115,7 +115,7 @@ console.log(
 ### Autonomous Agent & Tool Calling
 
 ```typescript
-import { Agent, defineTool, ToolRegistry, OllamaClient } from '@shubhamtaywade82/ollama-client-ts';
+import { Agent, defineTool, ToolRegistry, OllamaClient } from '@nemesis-oss/ollama-sdk';
 import { z } from 'zod';
 
 const client = new OllamaClient();
@@ -186,7 +186,7 @@ const registry = new ToolRegistry({
 ### Web Standard Streams & Next.js Integration
 
 ```typescript
-import { toResponse } from '@shubhamtaywade82/ollama-client-ts';
+import { toResponse } from '@nemesis-oss/ollama-sdk';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
@@ -284,7 +284,7 @@ The core client (`OllamaClient`, `Agent`, `ToolRegistry`, and everything exporte
 the package root) is built entirely on native `fetch` and Web Streams, so it runs
 unmodified on Cloudflare Workers, Vercel Edge Runtime, and Next.js Edge middleware/route
 handlers — no Node.js APIs required. The only Node-specific code (`SkillRegistry`, which
-reads `SKILL.md` files from disk) lives behind the separate `@shubhamtaywade82/ollama-client-ts/skills`
+reads `SKILL.md` files from disk) lives behind the separate `@nemesis-oss/ollama-sdk/skills`
 subpath export and is never pulled into the main bundle.
 
 This is enforced in CI, not just asserted: `npm run verify:edge-runtime` bundles
@@ -322,7 +322,7 @@ All subclasses carry `status`, `retryable`, and optional `request`/`response` co
 the original error via the standard `cause` property:
 
 ```typescript
-import { OllamaClientError, OllamaRateLimitError } from '@shubhamtaywade82/ollama-client-ts';
+import { OllamaClientError, OllamaRateLimitError } from '@nemesis-oss/ollama-sdk';
 
 try {
   await client.chatText({ model: 'qwen3.5:2b', messages: [...] });
@@ -375,4 +375,4 @@ npm run verify
 
 ## License
 
-MIT © [Shubham Taywade](https://github.com/shubhamtaywade82)
+MIT © [Shubham Taywade](https://github.com/nemesis-oss)
