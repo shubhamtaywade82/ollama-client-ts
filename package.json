@@ -1,5 +1,5 @@
 {
-  "name": "@shubhamtaywade82/ollama-client-ts",
+  "name": "@nemesis-oss/ollama-sdk",
   "version": "1.0.0",
   "description": "Production-grade TypeScript SDK for Ollama with native fetch, high availability failover, multi-turn tool calling, structured outputs, reasoning stream tokens, OpenAI/Anthropic bridges, MCP, and Web Stream adapters.",
   "keywords": [
@@ -25,13 +25,13 @@
   ],
   "license": "MIT",
   "author": "Shubham Taywade <shubhamtaywade82@gmail.com>",
-  "homepage": "https://github.com/shubhamtaywade82/ollama-client-ts#readme",
+  "homepage": "https://github.com/nemesis-oss/ollama-sdk#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/shubhamtaywade82/ollama-client-ts.git"
+    "url": "git+https://github.com/nemesis-oss/ollama-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/shubhamtaywade82/ollama-client-ts/issues"
+    "url": "https://github.com/nemesis-oss/ollama-sdk/issues"
   },
   "type": "module",
   "sideEffects": false,
