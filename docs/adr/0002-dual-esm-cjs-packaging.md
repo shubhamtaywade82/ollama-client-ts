@@ -1,9 +1,11 @@
 # ADR 0002: Dual ESM/CJS Packaging Strategy
 
 ## Status
+
 Accepted
 
 ## Context
+
 The package must work as a dependency in both modern ESM projects (`"type": "module"`,
 bundlers, Next.js/Vite) and legacy CommonJS projects (`require(...)`), without forcing
 consumers onto one module system. TypeScript SDKs commonly get this wrong in ways that
@@ -16,6 +18,7 @@ composition helpers), so consumers who only need `applySkill`/`parseFrontmatter`
 forced to pull in the full client.
 
 ## Decision
+
 - **Build twice, from one source tree.** `tsup.config.ts` builds each entry
   (`src/index.ts`, `src/skills/index.ts`) to both `esm` and `cjs` formats in a single
   pass, rather than maintaining separate ESM/CJS source or a transpile-down-to-CJS-only
@@ -38,6 +41,7 @@ forced to pull in the full client.
   and being discovered by a consumer.
 
 ## Rationale
+
 - Hand-maintaining separate ESM and CJS source trees doubles the surface for bugs to
   diverge. A single source tree with dual compilation (via `tsup`, which wraps `esbuild`)
   keeps behavior identical between the two builds by construction.
@@ -50,6 +54,7 @@ forced to pull in the full client.
   in code review.
 
 ## Consequences
+
 - Every new top-level export or subpath must be added to `exports` (and `typesVersions`
   if it's a subpath) — adding a file to `src/` alone does not make it consumable.
 - Consumers on very old bundlers without `exports` map support fall back to `main`

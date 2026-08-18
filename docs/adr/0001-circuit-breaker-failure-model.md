@@ -1,9 +1,11 @@
 # ADR 0001: Circuit Breaker Failure Model
 
 ## Status
+
 Accepted
 
 ## Context
+
 `OllamaClient` can be configured with multiple endpoints (`endpoints: [...]`) for high
 availability. When an endpoint is unhealthy, requests need to route around it without
 manual intervention, and recover automatically once the endpoint is healthy again.
@@ -16,6 +18,7 @@ The two standard approaches are:
    cooldown window, while still allowing traffic through if no healthy endpoint exists.
 
 ## Decision
+
 `EndpointRegistry` (`src/providers/endpoint-registry.ts`) implements the second model:
 
 - Each endpoint tracks a `failureCount` and `lastFailureTimestamp`.
@@ -32,6 +35,7 @@ There is no dedicated "circuit open" error. `executeWithFailover` in `client.ts`
 the list fails during that call.
 
 ## Rationale
+
 - **Local-first use case.** The primary deployment target is a local or small private
   Ollama fleet (1-3 endpoints), not a large service mesh. A hard-open circuit that
   rejects all traffic is the wrong default when there may be no other endpoint capable
@@ -50,6 +54,7 @@ the list fails during that call.
   compounding two different backoff curves into unpredictable behavior.
 
 ## Consequences
+
 - Consumers who need a true fail-fast circuit (reject immediately once open, never
   route to a known-bad endpoint even as a last resort) must implement that at the
   application layer using `client.healthCheck()` / `registry.status()`.

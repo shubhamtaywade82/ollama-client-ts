@@ -1,9 +1,11 @@
 # ADR 0004: Tool Execution Sandboxing Model
 
 ## Status
+
 Accepted
 
 ## Context
+
 `Agent` and `ToolRegistry` let a model decide, from its own output, which registered
 tool to call and with what arguments. Both the choice of tool and its arguments are
 therefore attacker- or hallucination-influenced input from the SDK's perspective, even
@@ -28,6 +30,7 @@ enforces real CPU and memory limits and can be forcibly terminated. That was con
 and rejected for this iteration; see Rationale.
 
 ## Decision
+
 `ToolRegistry` (`src/tools/registry.ts`) adds three independent, opt-in controls,
 matching the shape of `ToolRegistryOptions`:
 
@@ -52,6 +55,7 @@ All three default to `undefined` (disabled), preserving existing behavior for cu
 consumers. Nothing is force-enabled by default.
 
 ## Rationale
+
 - **Cooperative timeout over true isolation, for this iteration.** Moving `tool.execute`
   into a `worker_thread` would require it to be a value transferable/loadable across the
   thread boundary — effectively requiring tools to be defined as separate modules rather
@@ -62,7 +66,7 @@ consumers. Nothing is force-enabled by default.
   model (timer + `AbortSignal`) was chosen because it's additive, requires zero API
   changes for tools that don't opt in, and still solves the most common real-world case:
   I/O-bound tools (HTTP calls, file/database reads) that already respect `AbortSignal`
-  get genuinely cancelled; CPU-bound tools at least stop blocking the *agent loop's*
+  get genuinely cancelled; CPU-bound tools at least stop blocking the _agent loop's_
   progress, even though the orphaned work keeps running to completion in the background.
 - **Defaults are opt-in, not enforced, deliberately.** An enforced default timeout could
   silently break existing consumers whose tools legitimately run long (large file
@@ -78,19 +82,20 @@ consumers. Nothing is force-enabled by default.
   a tokenizer dependency for a marginal accuracy gain not worth the added dependency.
 - **No enforced `.strict()` on tool schemas.** Zod's default "strip unknown keys"
   behavior is permissive but not unsafe by itself — `execute` only ever receives
-  `parseResult.data`, which is the *validated* shape, so stripped extra keys can't smuggle
+  `parseResult.data`, which is the _validated_ shape, so stripped extra keys can't smuggle
   unvalidated data into a tool. Forcing `.strict()` globally would be a behavior change
   for any existing schema that intentionally tolerates extra fields, so it's documented
   as guidance (README, "Tool Execution Safety & Sandboxing") rather than enforced.
 
 ## Consequences
+
 - A tool that ignores `ToolExecutionContext.signal` and performs synchronous, CPU-bound
   work will still block the process past its configured `timeoutMs`; the registry will
   report a timeout failure to the agent loop at the correct time, but the orphaned work
   itself keeps consuming CPU until it naturally finishes. Tool authors doing
   CPU-intensive work are responsible for chunking it or checking `signal.aborted`
   themselves.
-- There is still no per-tool memory ceiling. `maxOutputChars` bounds the *result* fed
+- There is still no per-tool memory ceiling. `maxOutputChars` bounds the _result_ fed
   back into the conversation, not peak memory used while `execute` runs. A true memory
   limit remains dependent on the worker-thread/process-isolation redesign described
   above, which is out of scope here.

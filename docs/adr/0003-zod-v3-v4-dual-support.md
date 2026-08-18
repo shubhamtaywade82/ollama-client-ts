@@ -1,9 +1,11 @@
 # ADR 0003: Simultaneous Zod v3 and v4 Support
 
 ## Status
+
 Accepted
 
 ## Context
+
 Structured outputs (`chatWithSchema`, `generateWithSchema`), tool parameter schemas
 (`defineTool`), and MCP tool adapters all accept a Zod schema and need to convert it to
 JSON Schema for Ollama's `format` parameter. Zod v4 ships a native `z.toJSONSchema()`
@@ -17,6 +19,7 @@ identities that don't type-check against each other) or force every consumer ont
 whichever version this package happened to pin.
 
 ## Decision
+
 - `zod` is declared as a `peerDependency` with range `^3.22.0 || ^4.0.0` (see also: the
   package.json diff moving it out of `dependencies`), not a bundled dependency.
 - `zodToJsonSchema()` (`src/schema/zod.ts`) branches at runtime:
@@ -32,6 +35,7 @@ whichever version this package happened to pin.
   v4.
 
 ## Rationale
+
 - **`_def` is intentionally treated as an internal-but-stable enough surface for a
   fallback**, not a public Zod API. It's acceptable here because: (a) it's read-only
   introspection, never construction; (b) it's isolated to a single function
@@ -54,6 +58,7 @@ whichever version this package happened to pin.
   so consumers must control which copy they get.
 
 ## Consequences
+
 - New Zod schema node types added to a project's schemas (e.g. `z.tuple()`,
   `z.intersection()`) that aren't in the `zodV3ToJsonSchema` switch fall back to
   `{ type: 'object' }` under Zod v3 only — this is a known, bounded gap, not a silent

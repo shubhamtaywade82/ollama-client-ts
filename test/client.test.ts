@@ -41,7 +41,9 @@ describe('Client Core API with VCR', () => {
       const user = await client.chatWithSchema(
         {
           model: MODEL_NAME,
-          messages: [{ role: 'user', content: 'Generate a profile for Alice, age 30, role developer.' }],
+          messages: [
+            { role: 'user', content: 'Generate a profile for Alice, age 30, role developer.' },
+          ],
           options: { temperature: 0 },
         },
         UserSchema,

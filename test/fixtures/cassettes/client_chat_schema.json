@@ -31,11 +31,7 @@
                 "type": "string"
               }
             },
-            "required": [
-              "name",
-              "age",
-              "role"
-            ],
+            "required": ["name", "age", "role"],
             "additionalProperties": false
           },
           "stream": false
