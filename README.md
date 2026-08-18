@@ -347,7 +347,7 @@ observe per-endpoint circuit state directly.
 
 ## Testing
 
-The test suite contains 100 automated tests across 4 testing tiers:
+The test suite contains 105 automated tests across 4 testing tiers:
 
 ```bash
 # Run unit, integration, and functional test suite

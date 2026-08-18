@@ -14,7 +14,7 @@ describe('Agent Loop', () => {
     });
 
     const registry = new ToolRegistry();
-    registry.register(getWeather as never);
+    registry.register(getWeather);
 
     let turn = 0;
     const mockChatClient = {

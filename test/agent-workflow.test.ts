@@ -22,7 +22,7 @@ describe('Agentic Workflow and Feature Integrations', () => {
         },
       });
 
-      const registry = new ToolRegistry([getBalanceTool as never]);
+      const registry = new ToolRegistry([getBalanceTool]);
       const toolEvents: string[] = [];
 
       const agent = new Agent(client, {
@@ -71,7 +71,7 @@ describe('Agentic Workflow and Feature Integrations', () => {
         },
       });
 
-      const registry = new ToolRegistry([inventoryTool as never]);
+      const registry = new ToolRegistry([inventoryTool]);
       const agent = new Agent(client, { tools: registry, maxIterations: 3 });
 
       const result = await agent.run({

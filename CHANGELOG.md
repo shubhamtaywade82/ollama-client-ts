@@ -5,7 +5,15 @@ All notable changes to `@shubhamtaywade82/ollama-client-ts` will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2026-08-16
+## [1.0.0] - 2026-08-17
+
+First public release. The version was `0.1.0` throughout development but was never
+published to npm, so the entire feature set below ships as the initial `1.0.0`.
+
+`1.0.0` marks the public API surface (`OllamaClient`, `Agent`, `ToolRegistry`, the
+streaming adapters, the error hierarchy, and the compatibility bridges) as stable under
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html) — breaking changes to it now
+require a major version bump.
 
 ### Added
 
@@ -30,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Model Context Protocol (MCP) server integration (`createMcpToolSet`, `registerMcpTools`).
   - Opt-in tool execution sandboxing: per-tool/registry `timeoutMs` (cooperative cancellation via `AbortSignal`, surfaced as `OllamaToolTimeoutError`), `maxConcurrency` bounding parallel tool calls, and `maxOutputChars` truncating oversized tool output before it re-enters the conversation history. See [ADR 0004](./docs/adr/0004-tool-execution-sandboxing.md).
   - Synthetic, client-generated `tool_call_id` correlation: `ToolCall.id`, `Message.tool_call_id`, and `ToolExecutionResult.toolCallId` — Ollama's native protocol has no call ID, so the SDK synthesizes a stable one (`crypto.randomUUID()`, the Web Standard global, not `node:crypto`, to stay Edge-safe) the first time it sees a call without one, and reuses it consistently across the streamed `tool_call` event, the final aggregated message, the tool execution result, and the `role: 'tool'` history entry `Agent` appends. Execution/result correlation by array order still works exactly as before; `id` is an additive convenience. See [ADR 0007](./docs/adr/0007-synthetic-tool-call-ids.md).
-- **Architecture Decision Records:** `docs/adr/` documents the rationale behind the circuit breaker failure model, the dual ESM/CJS packaging strategy, Zod v3/v4 dual support, the tool execution sandboxing model, OpenTelemetry instrumentation, Edge runtime CI verification, synthetic tool-call IDs, and endpoint failover scope.
+- **Architecture Decision Records:** `docs/adr/` documents the rationale behind the circuit breaker failure model, the dual ESM/CJS packaging strategy, Zod v3/v4 dual support, the tool execution sandboxing model, OpenTelemetry instrumentation, Edge runtime CI verification, synthetic tool-call IDs, endpoint failover scope, and registry parameter variance.
 - **OpenTelemetry Instrumentation:** Automatic spans (`@opentelemetry/api` is an optional peer dependency, a no-op when absent or unconfigured) for HTTP requests, endpoint failover attempts, non-streaming `chat`/`generate` calls (using the Gen AI semantic conventions, including token usage), and `Agent` runs (`invoke_agent` → `ollama.agent.turn` → `execute_tool`). See [ADR 0005](./docs/adr/0005-opentelemetry-instrumentation.md).
 - **Edge Runtime CI Verification:** `npm run verify:edge-runtime` bundles `dist/index.js` for a browser/edge platform with `esbuild` (failing on any `node:*` import, matching Cloudflare Workers/Vercel Edge Runtime's own bundlers) and runs a full `OllamaClient` + `Agent` + tool-calling round trip inside `@edge-runtime/vm`'s sandboxed Edge Runtime — a real V8 context exposing only Web Standard globals. Wired into CI as its own job and into `verify`/`prepublishOnly`. See [ADR 0006](./docs/adr/0006-edge-runtime-ci-and-benchmarks.md).
 - **Benchmarks:** `npm run bench` (via `vitest bench`, no new dependency) covers NDJSON stream parsing, Zod schema conversion/structured output parsing, `ToolRegistry` dispatch overhead, and `OllamaClient.chat`'s end-to-end request pipeline overhead. Wired into CI as its own job.
@@ -52,6 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 4-tier test architecture: Unit, Integration, Functional, and Behavioral testing (50 tests).
   - VCR record and replay harness with real cassettes generated against `qwen3.5:2b` and `nomic-embed-text:latest`.
   - Multi-node CI/CD workflow (Node 18, 20, 22) and automated npm release with provenance.
+
+### Fixed
+
+- **`ToolRegistry` rejected every concretely-typed tool.** Its constructor, `register`, and `registerMany` accepted `Tool<never, unknown>`; because `Tool` is invariant in `TParams` (it appears in both `schema: z.ZodType<TParams>` and `execute`), _nothing_ was assignable to it — so `new ToolRegistry([myTool])`, `new ToolRegistry({ tools: [myTool] })`, and `.register(myTool)` all failed to compile for consumers, including the exact example in this README. Replaced with a new exported `AnyTool` alias. Tool authoring keeps full type safety (`defineTool` still infers `TParams` from the Zod schema and type-checks `execute` against it); only the registry's storage type is widened. Found by installing the packed tarball into a throwaway TypeScript project during pre-publish verification. See [ADR 0009](./docs/adr/0009-anytool-registry-variance.md).
+- **Tests are now type-checked.** `tsconfig.json` scoped checking to `src/`, and Vitest's esbuild transform strips types without verifying them — so all 20 test files were unchecked, and had masked the bug above with `as never` casts. `npm run typecheck` now uses `tsconfig.typecheck.json`, covering `src/`, `test/`, `bench/`, and `scripts/`. The casts (and a matching `as unknown as z.ZodType<never>` in `mcp-tools.ts`) are gone.
 
 ### Changed
 

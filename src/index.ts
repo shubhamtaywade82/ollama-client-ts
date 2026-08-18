@@ -142,6 +142,7 @@ export {
   defineTool,
   ToolRegistry,
   type Tool,
+  type AnyTool,
   type ToolHandler,
   type ToolExecutionContext,
   type ToolExecutionResult,
