@@ -7,10 +7,11 @@ dist/
 # Test coverage
 coverage/
 
-# Environment variables
+# Environment variables & auth
 .env
 .env.local
 .env.*.local
+.npmrc
 
 # Logs
 *.log

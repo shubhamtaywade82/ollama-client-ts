@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 This directory records significant architectural decisions for
-`@shubhamtaywade82/ollama-client-ts` — the context behind a choice, not just the choice
+`@nemesis-oss/ollama-sdk` — the context behind a choice, not just the choice
 itself — so future maintainers don't have to reverse-engineer intent from the diff.
 
 Format: one Markdown file per decision, numbered sequentially, following

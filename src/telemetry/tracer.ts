@@ -14,8 +14,8 @@ import type * as Otel from '@opentelemetry/api';
 export type SpanAttributeValue = string | number | boolean;
 export type SpanAttributes = Record<string, SpanAttributeValue | undefined>;
 
-const INSTRUMENTATION_NAME = '@shubhamtaywade82/ollama-client-ts';
-const INSTRUMENTATION_VERSION = '0.1.0';
+const INSTRUMENTATION_NAME = '@nemesis-oss/ollama-sdk';
+const INSTRUMENTATION_VERSION = '1.0.0';
 
 let apiPromise: Promise<typeof Otel | undefined> | undefined;
 
