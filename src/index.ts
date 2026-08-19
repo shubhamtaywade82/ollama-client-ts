@@ -1,5 +1,5 @@
 /**
- * ollama-client-ts: A production-grade TypeScript SDK for Ollama.
+ * @nemesis-oss/ollama-sdk: A production-grade TypeScript SDK for Ollama.
  */
 
 // Core client and config

@@ -60,7 +60,7 @@ export const NOOP_LOGGER: Logger = {
   error: () => undefined,
 };
 
-export function createConsoleLogger(prefix = '[ollama-client-ts]'): Logger {
+export function createConsoleLogger(prefix = '[@nemesis-oss/ollama-sdk]'): Logger {
   return {
     debug: (msg, ctx) => console.debug(`${prefix} ${msg}`, ctx ?? ''),
     info: (msg, ctx) => console.info(`${prefix} ${msg}`, ctx ?? ''),
