@@ -56,8 +56,8 @@ jobs:
           cd /tmp/consumer
           echo '{"name":"consumer","version":"1.0.0"}' > package.json
           npm install "/tmp/${TARBALL}"
-          node -e "const { OllamaClient } = require('@shubhamtaywade82/ollama-client-ts'); if (typeof OllamaClient !== 'function') throw new Error('CJS entry broken');"
-          node --input-type=module -e "import { OllamaClient } from '@shubhamtaywade82/ollama-client-ts'; if (typeof OllamaClient !== 'function') throw new Error('ESM entry broken');"
+          node -e "const { OllamaClient } = require('@nemesis-oss/ollama-sdk'); if (typeof OllamaClient !== 'function') throw new Error('CJS entry broken');"
+          node --input-type=module -e "import { OllamaClient } from '@nemesis-oss/ollama-sdk'; if (typeof OllamaClient !== 'function') throw new Error('ESM entry broken');"
 
   edge-runtime:
     runs-on: ubuntu-latest
