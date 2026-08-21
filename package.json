@@ -100,6 +100,7 @@
     "check:types": "npx --yes @arethetypeswrong/cli@latest --pack .",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build && npm run verify:edge-runtime",
     "example": "tsx",
+    "lab": "tsx lab/run.ts",
     "prepublishOnly": "npm run clean && npm run typecheck && npm run lint && npm test && npm run build && npm run verify:edge-runtime"
   },
   "peerDependencies": {

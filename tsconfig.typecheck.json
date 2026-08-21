@@ -9,7 +9,8 @@
   // so that can't happen again.
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "."
   },
-  "include": ["src/**/*", "test/**/*", "bench/**/*", "scripts/**/*"]
+  "include": ["src/**/*", "test/**/*", "bench/**/*", "scripts/**/*", "lab/**/*"]
 }
